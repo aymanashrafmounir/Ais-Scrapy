@@ -60,25 +60,42 @@ class MonroeTractorScraper(BaseScraper):
             
             logger.info(f"Starting with {items_loaded} machines loaded")
             
-            while items_loaded < expected_count:
-                # Scroll down
+            max_attempts = 20  # Maximum scroll attempts
+            attempts = 0
+            no_change_count = 0
+            
+            while items_loaded < expected_count and attempts < max_attempts:
+                # Scroll down in multiple steps for better loading
+                for _ in range(3):
+                    driver.execute_script("window.scrollBy(0, 500);")
+                    time.sleep(0.5)
+                
+                # Scroll to absolute bottom
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 
-                # Wait for new items to load
-                time.sleep(2)
+                # Wait longer for lazy loading
+                time.sleep(3)
                 
-                # Calculate new scroll height
+                # Calculate new scroll height and items
                 new_height = driver.execute_script("return document.body.scrollHeight")
                 new_items_loaded = len(driver.find_elements(By.CLASS_NAME, 'equip-item-wrap'))
                 
-                logger.info(f"Loaded {new_items_loaded}/{expected_count} machines")
+                logger.info(f"Loaded {new_items_loaded}/{expected_count} machines (attempt {attempts + 1})")
                 
-                # Break if no new content loaded
-                if new_items_loaded == items_loaded or new_height == last_height:
-                    break
+                # Check if stuck
+                if new_items_loaded == items_loaded:
+                    no_change_count += 1
+                    if no_change_count >= 3:
+                        logger.warning(f"No new items after 3 attempts, stopping at {new_items_loaded} machines")
+                        break
+                else:
+                    no_change_count = 0
                     
                 last_height = new_height
                 items_loaded = new_items_loaded
+                attempts += 1
+            
+            logger.info(f"Finished scrolling after {attempts} attempts, loaded {items_loaded} machines")
             
             # Parse the fully loaded page
             soup = BeautifulSoup(driver.page_source, 'html.parser')
