@@ -79,6 +79,12 @@
             "website_type": "monroetractor",
             "search_title": "Monroe Tractor - Used Construction Equipment",
             "enabled": true
+        },
+        {
+            "url": "https://fresno.craigslist.org/search/hva?bundleDuplicates=1&postal=93721&postedToday=1&search_distance=1000&sort=date&limit=50",
+            "website_type": "craigslist",
+            "search_title": "Craigslist - Heavy Equipment (Fresno 1000mi)",
+            "enabled": true
         }
     ]
 }

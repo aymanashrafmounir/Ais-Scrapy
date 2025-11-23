@@ -100,31 +100,57 @@ class ScraperOrchestrator:
                             self.scraper_config
                         )
                         
-                        # Scrape machines
-                        machines, pages = scraper.scrape()
-                        logger.info(f"Found {len(machines)} items in {pages} pages")
-                        
-                        # Check for new machines and cleanup old ones
-                        new_machines, deleted_count = await self._process_machines(
-                            website_config.website_type,
-                            website_config.search_title,
-                            machines
-                        )
-                        
-                        # DB Stats
-                        total_in_db = len(machines)
-                        
-                        logger.info(f"Database: {total_in_db} active | {len(new_machines)} new | {deleted_count} removed")
-                        
-                        # Send notifications for new machines
-                        if new_machines:
-                            if cycle_count == 1:
-                                pass # Suppress on first cycle
-                            else:
+                        # Handle Craigslist with marker-based approach
+                        if website_config.website_type == 'craigslist':
+                            # Get current marker
+                            current_marker = self.db.get_marker(website_config.search_title)
+                            logger.debug(f"Current marker: {current_marker}")
+                            
+                            # Scrape with marker
+                            new_machines, first_id = scraper.scrape(current_marker)
+                            logger.info(f"Found {len(new_machines)} new items")
+                            
+                            # Send notifications for new machines (skip first cycle)
+                            if new_machines and cycle_count > 1:
                                 await self.notifier.send_new_items_notification(
                                     website_config.search_title,
                                     [m.to_dict() for m in new_machines]
                                 )
+                            
+                            # Update marker if we have a first item
+                            if first_id:
+                                self.db.save_marker(website_config.search_title, first_id)
+                                logger.debug(f"Updated marker to: {first_id}")
+                            
+                            # Log stats
+                            logger.info(f"Marker: {first_id or 'none'} | {len(new_machines)} new items")
+                        
+                        else:
+                            # Standard approach for Monroe/AIS (save all, compare)
+                            machines, pages = scraper.scrape()
+                            logger.info(f"Found {len(machines)} items in {pages} pages")
+                            
+                            # Check for new machines and cleanup old ones
+                            new_machines, deleted_count = await self._process_machines(
+                                website_config.website_type,
+                                website_config.search_title,
+                                machines
+                            )
+                            
+                            # DB Stats
+                            total_in_db = len(machines)
+                            
+                            logger.info(f"Database: {total_in_db} active | {len(new_machines)} new | {deleted_count} removed")
+                            
+                            # Send notifications for new machines
+                            if new_machines:
+                                if cycle_count == 1:
+                                    pass # Suppress on first cycle
+                                else:
+                                    await self.notifier.send_new_items_notification(
+                                        website_config.search_title,
+                                        [m.to_dict() for m in new_machines]
+                                    )
                         
                         url_duration = asyncio.get_event_loop().time() - url_start_time
                         logger.info(f"URL processed in {url_duration:.2f}s")

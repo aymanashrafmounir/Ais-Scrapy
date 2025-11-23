@@ -3,6 +3,7 @@ from typing import Dict, Type
 from scrapers.base_scraper import BaseScraper
 from scrapers.aisequip_scraper import AISEquipScraper
 from scrapers.monroe_tractor_scraper import MonroeTractorScraper
+from scrapers.craigslist_scraper import CraigslistScraper
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ class ScraperFactory:
     _scrapers: Dict[str, Type[BaseScraper]] = {
         'aisequip': AISEquipScraper,
         'monroetractor': MonroeTractorScraper,
+        'craigslist': CraigslistScraper,
     }
     
     @classmethod

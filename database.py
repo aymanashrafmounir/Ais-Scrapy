@@ -46,6 +46,16 @@ class DatabaseHandler:
                 )
             ''')
             
+            # Create markers table for Craigslist marker-based tracking
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS markers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    search_title VARCHAR(200) NOT NULL UNIQUE,
+                    marker_id VARCHAR(100) NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
             # Create index for faster lookups
             cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_search_unique 
@@ -184,4 +194,53 @@ class DatabaseHandler:
                 return deleted
         except Exception as e:
             logger.error(f"Error deleting machine {unique_id}: {e}")
+            return False
+    
+    def get_marker(self, search_title: str) -> Optional[str]:
+        """
+        Get the marker ID for a search title (for Craigslist tracking)
+        
+        Args:
+            search_title: The search title to get marker for
+            
+        Returns:
+            marker_id if found, None otherwise
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    'SELECT marker_id FROM markers WHERE search_title = ?',
+                    (search_title,)
+                )
+                result = cursor.fetchone()
+                return result[0] if result else None
+        except Exception as e:
+            logger.error(f"Error getting marker for '{search_title}': {e}")
+            return None
+    
+    def save_marker(self, search_title: str, marker_id: str) -> bool:
+        """
+        Save or update the marker ID for a search title (for Craigslist tracking)
+        
+        Args:
+            search_title: The search title
+            marker_id: The marker ID (usually the first item's unique_id)
+            
+        Returns:
+            True if saved successfully, False otherwise
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO markers (search_title, marker_id, updated_at) 
+                    VALUES (?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(search_title) 
+                    DO UPDATE SET marker_id = ?, updated_at = CURRENT_TIMESTAMP
+                ''', (search_title, marker_id, marker_id))
+                logger.info(f"Saved marker for '{search_title}': {marker_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Error saving marker for '{search_title}': {e}")
             return False
