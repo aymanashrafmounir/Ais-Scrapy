@@ -59,20 +59,22 @@ class Config:
         self.user_agent = scraping.get('user_agent', self.user_agent)
         
         # Website configurations
-        websites_data = self._raw_config.get('websites', [])
-        self.websites = []
-        
-        for site_data in websites_data:
+        websites = []
+        for site in self._raw_config.get('websites', []):
             try:
                 website = WebsiteConfig(
-                    url=site_data['url'],
-                    website_type=site_data['website_type'],
-                    search_title=site_data['search_title'],
-                    enabled=site_data.get('enabled', True)
+                    url=site['url'],
+                    website_type=site['website_type'],
+                    search_title=site['search_title'],
+                    enabled=site.get('enabled', True),
+                    max_items=site.get('max_items', None)  # Parse max_items from config
                 )
-                self.websites.append(website)
-            except Exception as e:
-                logger.error(f"Failed to parse website config: {site_data}. Error: {e}")
+                websites.append(website)
+            except (KeyError, ValueError) as e:
+                logger.error(f"Failed to parse website config: {site}. Error: {e}")
+                continue
+        
+        self.websites = websites
     
     def _validate_config(self) -> None:
         """Validate the configuration"""

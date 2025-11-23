@@ -94,18 +94,62 @@ class TelegramNotifier:
             logger.error(f"Error downloading image from {image_url}: {e}")
             return None
     
-    async def send_alert(self, message: str):
-        """Send warning/alert message to Telegram"""
+    async def send_alert(self, message: str) -> bool:
+        """Send a general alert message"""
         try:
-            alert_message = f"⚠️ <b>ALERT</b>\n\n{message}"
-            await self.bot.send_message(
-                chat_id=self.chat_id,
-                text=alert_message,
-                parse_mode='HTML'
-            )
-            logger.warning(f"Alert sent: {message}")
-        except TelegramError as e:
+            formatted_message = f"⚠️ <b>ALERT</b>\n\n{message}"
+            
+            async with self.bot:
+                await self.bot.send_message(
+                    chat_id=self.chat_id,
+                    text=formatted_message,
+                    parse_mode='HTML'
+                )
+            
+            logger.info(f"Alert sent: {message[:50]}...")
+            return True
+            
+        except Exception as e:
             logger.error(f"Failed to send alert: {e}")
+            return False
+    
+    async def send_zero_items_alert(self, search_title: str, url: str) -> bool:
+        """
+        Send alert when a URL scrapes 0 items (might indicate a problem)
+        
+        Args:
+            search_title: The search title that returned 0 items
+            url: The URL that was scraped
+            
+        Returns:
+            True if sent successfully, False otherwise
+        """
+        try:
+            message = (
+                f"⚠️ <b>Zero Items Alert</b>\n\n"
+                f"<b>Source:</b> {search_title}\n"
+                f"<b>Status:</b> Scraped 0 items\n"
+                f"<b>URL:</b> {url[:80]}...\n\n"
+                f"This might indicate:\n"
+                f"• Website structure changed\n"
+                f"• No items available\n"
+                f"• Scraping issue"
+            )
+            
+            async with self.bot:
+                await self.bot.send_message(
+                    chat_id=self.chat_id,
+                    text=message,
+                    parse_mode='HTML',
+                    disable_web_page_preview=True
+                )
+            
+            logger.info(f"Zero items alert sent for: {search_title}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to send zero items alert: {e}")
+            return False
     
     async def test_connection(self):
         """Test Telegram bot connection"""

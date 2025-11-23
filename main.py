@@ -106,9 +106,19 @@ class ScraperOrchestrator:
                             current_marker = self.db.get_marker(website_config.search_title)
                             logger.debug(f"Current marker: {current_marker}")
                             
-                            # Scrape with marker
-                            new_machines, first_id = scraper.scrape(current_marker)
+                            # Scrape with marker and optional max_items limit
+                            new_machines, first_id = scraper.scrape(
+                                current_marker, 
+                                max_items=website_config.max_items
+                            )
                             logger.info(f"Found {len(new_machines)} new items")
+                            
+                            # Alert if 0 items scraped (might indicate problem)
+                            if len(new_machines) == 0 and not current_marker:
+                                await self.notifier.send_zero_items_alert(
+                                    website_config.search_title,
+                                    website_config.url
+                                )
                             
                             # Send notifications for new machines (skip first cycle)
                             if new_machines and cycle_count > 1:
@@ -129,6 +139,13 @@ class ScraperOrchestrator:
                             # Standard approach for Monroe/AIS (save all, compare)
                             machines, pages = scraper.scrape()
                             logger.info(f"Found {len(machines)} items in {pages} pages")
+                            
+                            # Alert if 0 items scraped (might indicate problem)
+                            if len(machines) == 0:
+                                await self.notifier.send_zero_items_alert(
+                                    website_config.search_title,
+                                    website_config.url
+                                )
                             
                             # Check for new machines and cleanup old ones
                             new_machines, deleted_count = await self._process_machines(

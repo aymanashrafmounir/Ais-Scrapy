@@ -16,19 +16,20 @@ logger = logging.getLogger(__name__)
 class CraigslistScraper(BaseScraper):
     """Scraper for Craigslist with marker-based tracking and Selenium"""
     
-    def scrape(self, current_marker: Optional[str] = None) -> Tuple[List[Machine], Optional[str]]:
+    def scrape(self, current_marker: Optional[str] = None, max_items: Optional[int] = None) -> Tuple[List[Machine], Optional[str]]:
         """
         Scrape Craigslist with marker-based tracking using Selenium
         
         Args:
             current_marker: The marker ID to stop at (from previous scrape)
+            max_items: Maximum number of items to scrape (optional limit)
             
         Returns:
             Tuple of (new_machines, first_item_id)
         """
         driver = None
         try:
-            logger.info(f"Starting Craigslist scrape with Selenium (marker: {current_marker})")
+            logger.info(f"Starting Craigslist scrape with Selenium (marker: {current_marker}, limit: {max_items or 'unlimited'})")
             
             # Setup Chrome options for headless mode
             chrome_options = Options()
@@ -50,7 +51,7 @@ class CraigslistScraper(BaseScraper):
             soup = BeautifulSoup(driver.page_source, 'html.parser')
             
             # Parse with marker logic
-            machines, first_item_id = self._parse_with_marker(soup, current_marker)
+            machines, first_item_id = self._parse_with_marker(soup, current_marker, max_items)
             
             logger.info(f"Scraped {len(machines)} new machines (first ID: {first_item_id})")
             return machines, first_item_id
@@ -62,10 +63,15 @@ class CraigslistScraper(BaseScraper):
             if driver:
                 driver.quit()
     
-    def _parse_with_marker(self, soup: BeautifulSoup, marker: Optional[str]) -> Tuple[List[Machine], Optional[str]]:
+    def _parse_with_marker(self, soup: BeautifulSoup, marker: Optional[str], max_items: Optional[int] = None) -> Tuple[List[Machine], Optional[str]]:
         """
-        Parse page and stop at marker
+        Parse page and stop at marker or max_items limit
         
+        Args:
+            soup: BeautifulSoup object
+            marker: ID to stop at
+            max_items: Maximum items to return
+            
         Returns:
             Tuple of (new_machines, first_item_id)
         """
@@ -88,6 +94,11 @@ class CraigslistScraper(BaseScraper):
         
         for idx, item in enumerate(results):
             try:
+                # Check if we've reached the max_items limit
+                if max_items and len(machines) >= max_items:
+                    logger.info(f"Reached max_items limit ({max_items}), stopping")
+                    break
+                
                 # Extract data-pid as unique ID
                 unique_id = item.get('data-pid')
                 if not unique_id:

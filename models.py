@@ -38,6 +38,7 @@ class WebsiteConfig:
     website_type: str  # e.g., "aisequip"
     search_title: str  # e.g., "AIS Equipment - Wheel Loaders"
     enabled: bool = True
+    max_items: Optional[int] = None  # Limit number of items to scrape (for Craigslist)
     
     def __post_init__(self):
         """Validate configuration"""
@@ -47,3 +48,4 @@ class WebsiteConfig:
             raise ValueError("website_type cannot be empty")
         if not self.search_title:
             raise ValueError("search_title cannot be empty")
+
