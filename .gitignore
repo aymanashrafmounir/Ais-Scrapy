@@ -1,6 +1,3 @@
-# DO NOT COMMIT SENSITIVE INFORMATION
-config.json
-
 # Database
 *.db
 *.sqlite

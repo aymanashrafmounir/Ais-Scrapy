@@ -1,0 +1,84 @@
+{
+    "telegram": {
+        "bot_token": "8375122848:AAHk893BojkXt8dM2HdRoHM7cDdFoUIEiOo",
+        "chat_id": "-1003420417789"
+    },
+    "database": {
+        "path": "machines.db"
+    },
+    "scraping": {
+        "delay_between_requests": 5,
+        "request_timeout": 30,
+        "max_retries": 5,
+        "loop_interval_seconds": 30,
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    },
+    "websites": [
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=backhoe",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Backhoes",
+            "enabled": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=art-truck",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Articulated Trucks",
+            "enabled": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=dozer",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Dozers",
+            "enabled": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=compactors",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Compactors",
+            "enabled": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=excavator",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Excavators",
+            "enabled": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=forklift",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Forklifts",
+            "enabled": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=grader",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Graders",
+            "enabled": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=roller",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Rollers",
+            "enabled": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=skidsteer",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Skid Steers",
+            "enabled": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=whl-loader",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Wheel Loaders",
+            "enabled": true
+        },
+        {
+            "url": "https://www.monroetractor.com/for-sale-t/construction/used/",
+            "website_type": "monroetractor",
+            "search_title": "Monroe Tractor - Used Construction Equipment",
+            "enabled": true
+        }
+    ]
+}

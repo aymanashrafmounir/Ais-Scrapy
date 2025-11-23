@@ -2,6 +2,7 @@ import logging
 from typing import Dict, Type
 from scrapers.base_scraper import BaseScraper
 from scrapers.aisequip_scraper import AISEquipScraper
+from scrapers.monroe_tractor_scraper import MonroeTractorScraper
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,7 @@ class ScraperFactory:
     # Registry mapping website types to scraper classes
     _scrapers: Dict[str, Type[BaseScraper]] = {
         'aisequip': AISEquipScraper,
+        'monroetractor': MonroeTractorScraper,
     }
     
     @classmethod
