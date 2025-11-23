@@ -39,6 +39,13 @@
             "enabled": true
         },
         {
+            "url": "https://fresno.craigslist.org/search/hva?bundleDuplicates=1&postal=93721&postedToday=1&search_distance=1000&sort=date#search=2~gallery~0",
+            "website_type": "craigslist",
+            "search_title": "Craigslist - Heavy Equipment (Fresno 1000mi)",
+            "enabled": true,
+            "max_items": 50
+        },
+        {
             "url": "https://www.aisequip.com/pre-owned-machines/?_categories=excavator",
             "website_type": "aisequip",
             "search_title": "AIS Equipment - Excavators",
@@ -55,6 +62,13 @@
             "website_type": "aisequip",
             "search_title": "AIS Equipment - Graders",
             "enabled": true
+        },
+        {
+            "url": "https://wichita.craigslist.org/search/hva?bundleDuplicates=1&postal=67202&postedToday=1&search_distance=1000&sort=date#search=2~gallery~0",
+            "website_type": "craigslist",
+            "search_title": "Craigslist - Heavy Equipment (Wichita 1000mi)",
+            "enabled": true,
+            "max_items": 50
         },
         {
             "url": "https://www.aisequip.com/pre-owned-machines/?_categories=roller",
@@ -75,15 +89,16 @@
             "enabled": true
         },
         {
+            "url": "https://washingtondc.craigslist.org/search/hva?bundleDuplicates=1&postal=20009&postedToday=1&search_distance=1000&sort=date#search=2~gallery~0",
+            "website_type": "craigslist",
+            "search_title": "Craigslist - Heavy Equipment (Washington DC 1000mi)",
+            "enabled": true,
+            "max_items": 50
+        },
+        {
             "url": "https://www.monroetractor.com/for-sale-t/construction/used/",
             "website_type": "monroetractor",
             "search_title": "Monroe Tractor - Used Construction Equipment",
-            "enabled": true
-        },
-        {
-            "url": "https://fresno.craigslist.org/search/hva?bundleDuplicates=1&postal=93721&postedToday=1&search_distance=1000&sort=date&limit=50",
-            "website_type": "craigslist",
-            "search_title": "Craigslist - Heavy Equipment (Fresno 1000mi)",
             "enabled": true
         }
     ]
