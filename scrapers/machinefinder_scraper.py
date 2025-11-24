@@ -108,60 +108,72 @@ class MachineFinderScraper(BaseScraper):
         Returns:
             True if successful, False otherwise
         """
-        driver = None
-        try:
-            logger.info("Extracting CSRF token and cookies from MachineFinder...")
-            
-            # Setup Chrome
-            chrome_options = Options()
-            chrome_options.add_argument('--headless=new')
-            chrome_options.add_argument('--no-sandbox')
-            chrome_options.add_argument('--disable-dev-shm-usage')
-            chrome_options.add_argument('--disable-gpu')
-            
-            driver = webdriver.Chrome(options=chrome_options)
-            driver.get('https://www.machinefinder.com/')
-            
-            # Wait for page to load
-            time.sleep(3)
-            
-            # Extract cookies
-            selenium_cookies = driver.get_cookies()
-            self.cookies = {cookie['name']: cookie['value'] for cookie in selenium_cookies}
-            
-            # Extract CSRF token from page source or meta tag
-            page_source = driver.page_source
-            
-            # Try to find CSRF token in meta tag
-            soup = BeautifulSoup(page_source, 'html.parser')
-            csrf_meta = soup.find('meta', {'name': 'csrf-token'})
-            if csrf_meta:
-                self.csrf_token = csrf_meta.get('content')
-            else:
-                # Try to find in script or other places
-                import re
-                csrf_match = re.search(r'csrf[_-]?token["\']?\s*[:=]\s*["\']([^"\']+)', page_source, re.IGNORECASE)
-                if csrf_match:
-                    self.csrf_token = csrf_match.group(1)
-            
-            # If still no token, try getting from cookies
-            if not self.csrf_token:
-                self.csrf_token = self.cookies.get('XSRF-TOKEN', '') or self.cookies.get('csrf_token', '')
-            
-            if self.csrf_token:
-                logger.info(f"✓ Successfully extracted CSRF token: {self.csrf_token[:20]}...")
-                logger.debug(f"Extracted {len(self.cookies)} cookies")
-                return True
-            else:
-                logger.error("Could not find CSRF token")
-                return False
+        max_retries = 3
+        retry_delay = 5
+
+        for attempt in range(max_retries):
+            driver = None
+            try:
+                logger.info(f"Extracting CSRF token and cookies from MachineFinder... (Attempt {attempt + 1}/{max_retries})")
                 
-        except Exception as e:
-            logger.error(f"Error extracting tokens: {e}")
-            return False
-        finally:
-            if driver:
-                driver.quit()
+                # Setup Chrome
+                chrome_options = Options()
+                chrome_options.add_argument('--headless=new')
+                chrome_options.add_argument('--no-sandbox')
+                chrome_options.add_argument('--disable-dev-shm-usage')
+                chrome_options.add_argument('--disable-gpu')
+                
+                driver = webdriver.Chrome(options=chrome_options)
+                driver.get('https://www.machinefinder.com/')
+                
+                # Wait for page to load
+                time.sleep(3)
+                
+                # Extract cookies
+                selenium_cookies = driver.get_cookies()
+                self.cookies = {cookie['name']: cookie['value'] for cookie in selenium_cookies}
+                
+                # Extract CSRF token from page source or meta tag
+                page_source = driver.page_source
+                
+                # Try to find CSRF token in meta tag
+                soup = BeautifulSoup(page_source, 'html.parser')
+                csrf_meta = soup.find('meta', {'name': 'csrf-token'})
+                if csrf_meta:
+                    self.csrf_token = csrf_meta.get('content')
+                else:
+                    # Try to find in script or other places
+                    import re
+                    csrf_match = re.search(r'csrf[_-]?token["\']?\s*[:=]\s*["\']([^"\']+)', page_source, re.IGNORECASE)
+                    if csrf_match:
+                        self.csrf_token = csrf_match.group(1)
+                
+                # If still no token, try getting from cookies
+                if not self.csrf_token:
+                    self.csrf_token = self.cookies.get('XSRF-TOKEN', '') or self.cookies.get('csrf_token', '')
+                
+                if self.csrf_token:
+                    logger.info(f"✓ Successfully extracted CSRF token: {self.csrf_token[:20]}...")
+                    logger.debug(f"Extracted {len(self.cookies)} cookies")
+                    return True
+                else:
+                    logger.warning(f"Could not find CSRF token (Attempt {attempt + 1}/{max_retries})")
+                    # Don't return False immediately, let it retry or fail at the end of loop if this was an error
+                    # But here it's just not found, maybe we should retry? 
+                    # The original code returned False. Let's treat "not found" as a failure to retry if we think it's transient.
+                    # For now, let's assume if it loads but no token, retrying might help if page load was partial.
+                    raise Exception("CSRF token not found in page")
+                    
+            except Exception as e:
+                logger.error(f"Error extracting tokens (Attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+            finally:
+                if driver:
+                    driver.quit()
+        
+        return False
     
     async def _fetch_category_async(self, category: dict, max_concurrent: int = 5) -> List[Machine]:
         """

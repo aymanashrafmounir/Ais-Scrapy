@@ -27,41 +27,49 @@ class MascusScraper(BaseScraper):
         Returns:
             Tuple of (new_machines, first_item_id)
         """
-        driver = None
-        try:
-            logger.info(f"Starting Mascus scrape with Selenium (marker: {current_marker}, limit: {max_items or 'unlimited'})")
-            
-            # Setup Chrome options for headless mode
-            chrome_options = Options()
-            chrome_options.add_argument('--headless=new')
-            chrome_options.add_argument('--no-sandbox')
-            chrome_options.add_argument('--disable-dev-shm-usage')
-            chrome_options.add_argument('--disable-gpu')
-            chrome_options.add_argument('--disable-software-rasterizer')
-            chrome_options.add_argument('--window-size=1920,1080')
-            
-            # Initialize driver
-            driver = webdriver.Chrome(options=chrome_options)
-            driver.get(self.url)
-            
-            # Wait for page to load
-            time.sleep(4)  # Mascus might need more time to load
-            
-            # Parse the fully loaded page
-            soup = BeautifulSoup(driver.page_source, 'html.parser')
-            
-            # Parse with marker logic
-            machines, first_item_id = self._parse_with_marker(soup, current_marker, max_items)
-            
-            logger.info(f"Scraped {len(machines)} new machines (first ID: {first_item_id})")
-            return machines, first_item_id
-            
-        except Exception as e:
-            logger.error(f"Error scraping Mascus: {e}")
-            return [], None
-        finally:
-            if driver:
-                driver.quit()
+        max_retries = 3
+        retry_delay = 5
+
+        for attempt in range(max_retries):
+            driver = None
+            try:
+                logger.info(f"Starting Mascus scrape with Selenium (marker: {current_marker}, limit: {max_items or 'unlimited'}) - Attempt {attempt + 1}/{max_retries}")
+                
+                # Setup Chrome options for headless mode
+                chrome_options = Options()
+                chrome_options.add_argument('--headless=new')
+                chrome_options.add_argument('--no-sandbox')
+                chrome_options.add_argument('--disable-dev-shm-usage')
+                chrome_options.add_argument('--disable-gpu')
+                chrome_options.add_argument('--disable-software-rasterizer')
+                chrome_options.add_argument('--window-size=1920,1080')
+                
+                # Initialize driver
+                driver = webdriver.Chrome(options=chrome_options)
+                driver.get(self.url)
+                
+                # Wait for page to load
+                time.sleep(4)  # Mascus might need more time to load
+                
+                # Parse the fully loaded page
+                soup = BeautifulSoup(driver.page_source, 'html.parser')
+                
+                # Parse with marker logic
+                machines, first_item_id = self._parse_with_marker(soup, current_marker, max_items)
+                
+                logger.info(f"Scraped {len(machines)} new machines (first ID: {first_item_id})")
+                return machines, first_item_id
+                
+            except Exception as e:
+                logger.error(f"Error scraping Mascus (Attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+            finally:
+                if driver:
+                    driver.quit()
+        
+        return [], None
     
     def _parse_with_marker(self, soup: BeautifulSoup, marker: Optional[str], max_items: Optional[int]) -> Tuple[List[Machine], Optional[str]]:
         """
