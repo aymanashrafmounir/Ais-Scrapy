@@ -2,6 +2,6 @@ requests
 beautifulsoup4
 python-telegram-bot
 selenium
-aiohttp>=20.0
+aiohttp>=3.9.0
 lxml>=4.9.0
-selenium>=4.15.0
+httpx>=0.27.0
