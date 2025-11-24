@@ -42,10 +42,14 @@ class CraigslistScraper(BaseScraper):
                 chrome_options.add_argument('--disable-dev-shm-usage')
                 chrome_options.add_argument('--disable-gpu')
                 chrome_options.add_argument('--disable-software-rasterizer')
+                chrome_options.add_argument('--disable-extensions')
+                chrome_options.add_argument('--disable-infobars')
                 chrome_options.add_argument('--window-size=1920,1080')
+                chrome_options.page_load_strategy = 'eager'
                 
                 # Initialize driver
                 driver = webdriver.Chrome(options=chrome_options)
+                driver.set_page_load_timeout(60)
                 driver.get(self.url)
                 
                 # Wait for page to load

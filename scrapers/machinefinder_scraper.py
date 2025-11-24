@@ -122,8 +122,12 @@ class MachineFinderScraper(BaseScraper):
                 chrome_options.add_argument('--no-sandbox')
                 chrome_options.add_argument('--disable-dev-shm-usage')
                 chrome_options.add_argument('--disable-gpu')
+                chrome_options.add_argument('--disable-extensions')
+                chrome_options.add_argument('--disable-infobars')
+                chrome_options.page_load_strategy = 'eager'
                 
                 driver = webdriver.Chrome(options=chrome_options)
+                driver.set_page_load_timeout(60)
                 driver.get('https://www.machinefinder.com/')
                 
                 # Wait for page to load
