@@ -8,6 +8,7 @@ import logging
 import sys
 from typing import List, Tuple
 from pathlib import Path
+from logging.handlers import RotatingFileHandler
 
 from config_schema import load_config
 from database import DatabaseHandler
@@ -16,17 +17,44 @@ from scraper_factory import ScraperFactory
 from models import Machine
 
 
-# Configure logging
+# Configure logging with rotation (10MB max, 3 backup files)
+log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# File handler with rotation
+file_handler = RotatingFileHandler(
+    'scraper.log',
+    maxBytes=10 * 1024 * 1024,  # 10MB
+    backupCount=3,  # Keep 3 backup files (scraper.log.1, scraper.log.2, scraper.log.3)
+    encoding='utf-8'
+)
+file_handler.setFormatter(log_formatter)
+
+# Console handler
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(log_formatter)
+
+# Configure root logger
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('scraper.log'),
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=[file_handler, console_handler]
 )
 
 logger = logging.getLogger(__name__)
+
+# Configure separate timing logger
+timing_logger = logging.getLogger('timing')
+timing_logger.setLevel(logging.INFO)
+timing_logger.propagate = False  # Don't propagate to root logger
+
+timing_formatter = logging.Formatter('%(asctime)s - %(message)s')
+timing_handler = RotatingFileHandler(
+    'timing.log',
+    maxBytes=5 * 1024 * 1024,  # 5MB
+    backupCount=3,
+    encoding='utf-8'
+)
+timing_handler.setFormatter(timing_formatter)
+timing_logger.addHandler(timing_handler)
 
 
 class ScraperOrchestrator:
@@ -86,11 +114,15 @@ class ScraperOrchestrator:
             while True:
                 cycle_start_time = asyncio.get_event_loop().time()
                 logger.info(f"Cycle {cycle_count} Started")
+                timing_logger.info(f"="*60)
+                timing_logger.info(f"CYCLE {cycle_count} STARTED")
+                timing_logger.info(f"="*60)
                 
                 # Process each website
                 for i, website_config in enumerate(websites, 1):
                     url_start_time = asyncio.get_event_loop().time()
                     logger.info(f"Processing {i}/{len(websites)}: {website_config.search_title}")
+                    timing_logger.info(f"URL {i}/{len(websites)}: {website_config.search_title} - Started")
                     
                     try:
                         # Create scraper (pass categories for MachineFinder)
@@ -179,14 +211,29 @@ class ScraperOrchestrator:
                         
                         url_duration = asyncio.get_event_loop().time() - url_start_time
                         logger.info(f"URL processed in {url_duration:.2f}s")
+                        timing_logger.info(f"URL {i}/{len(websites)}: {website_config.search_title} - Completed in {url_duration:.2f}s")
+                        
+                        # Delay between URLs if configured (but not after the last URL)
+                        if self.config.url_delay > 0 and i < len(websites):
+                            timing_logger.info(f"⏳ Waiting {self.config.url_delay}s before next URL...")
+                            await asyncio.sleep(self.config.url_delay)
                     
                     except Exception as e:
                         logger.error(f"Error processing website {website_config.url}: {e}", exc_info=True)
+                        url_duration = asyncio.get_event_loop().time() - url_start_time
+                        timing_logger.info(f"URL {i}/{len(websites)}: {website_config.search_title} - Failed after {url_duration:.2f}s")
+                        
+                        # Delay even after errors (but not after the last URL)
+                        if self.config.url_delay > 0 and i < len(websites):
+                            timing_logger.info(f"⏳ Waiting {self.config.url_delay}s before next URL...")
+                            await asyncio.sleep(self.config.url_delay)
                         continue
                 
                 cycle_duration = asyncio.get_event_loop().time() - cycle_start_time
                 logger.info(f"Cycle duration: {cycle_duration:.2f}s")
                 logger.info(f"Cycle {cycle_count} Ended")
+                timing_logger.info(f"CYCLE {cycle_count} ENDED - Total Duration: {cycle_duration:.2f}s")
+                timing_logger.info(f"")
                 
                 # Wait for next run if interval is set
                 if self.config.loop_interval > 0:

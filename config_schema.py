@@ -18,6 +18,7 @@ class Config:
         self.websites: List[WebsiteConfig] = []
         self.database_path: str = "machines.db"
         self.scraping_delay: float = 2.0
+        self.url_delay: float = 0.0  # Delay between processing different URLs
         self.request_timeout: int = 30
         self.max_retries: int = 3
         self.loop_interval: int = 0
@@ -53,6 +54,7 @@ class Config:
         # Scraping settings
         scraping = self._raw_config.get('scraping', {})
         self.scraping_delay = scraping.get('delay_between_requests', 2.0)
+        self.url_delay = scraping.get('delay_between_urls', 0.0)
         self.request_timeout = scraping.get('request_timeout', 30)
         self.max_retries = scraping.get('max_retries', 3)
         self.loop_interval = scraping.get('loop_interval_seconds', 0)

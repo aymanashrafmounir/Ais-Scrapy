@@ -8,6 +8,7 @@
     },
     "scraping": {
         "delay_between_requests": 5,
+        "delay_between_urls": 7,
         "request_timeout": 30,
         "max_retries": 5,
         "loop_interval_seconds": 30,
