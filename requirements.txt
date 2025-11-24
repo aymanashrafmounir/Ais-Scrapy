@@ -1,5 +1,7 @@
-requests>=2.31.0
-beautifulsoup4>=4.12.0
-python-telegram-bot>=20.0
+requests
+beautifulsoup4
+python-telegram-bot
+selenium
+aiohttp>=20.0
 lxml>=4.9.0
 selenium>=4.15.0

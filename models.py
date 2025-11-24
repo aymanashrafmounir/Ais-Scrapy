@@ -39,6 +39,7 @@ class WebsiteConfig:
     search_title: str  # e.g., "AIS Equipment - Wheel Loaders"
     enabled: bool = True
     max_items: Optional[int] = None  # Limit number of items to scrape (for Craigslist)
+    categories: Optional[list] = None  # Categories list (for MachineFinder API)
     
     def __post_init__(self):
         """Validate configuration"""

@@ -4,6 +4,7 @@ from scrapers.base_scraper import BaseScraper
 from scrapers.aisequip_scraper import AISEquipScraper
 from scrapers.monroe_tractor_scraper import MonroeTractorScraper
 from scrapers.craigslist_scraper import CraigslistScraper
+from scrapers.machinefinder_scraper import MachineFinderScraper
 
 logger = logging.getLogger(__name__)
 
@@ -19,17 +20,19 @@ class ScraperFactory:
         'aisequip': AISEquipScraper,
         'monroetractor': MonroeTractorScraper,
         'craigslist': CraigslistScraper,
+        'machinefinder': MachineFinderScraper,
     }
     
     @classmethod
-    def create_scraper(cls, website_type: str, url: str, config: dict) -> BaseScraper:
+    def create_scraper(cls, website_type: str, url: str, config: dict, categories: list = None) -> BaseScraper:
         """
         Create a scraper instance for the given website type
         
         Args:
-            website_type: Type of website (e.g., "aisequip")
+            website_type: Type of website (e.g., "aisequip", "machinefinder")
             url: URL to scrape
             config: Configuration dictionary
+            categories: Optional list of categories (for MachineFinder)
             
         Returns:
             Scraper instance
@@ -47,7 +50,12 @@ class ScraperFactory:
             )
         
         logger.info(f"Creating scraper for website type: {website_type}")
-        return scraper_class(url, config)
+        
+        # MachineFinder needs categories parameter
+        if website_type.lower() == 'machinefinder':
+            return scraper_class(url, config, categories=categories)
+        else:
+            return scraper_class(url, config)
     
     @classmethod
     def register_scraper(cls, website_type: str, scraper_class: Type[BaseScraper]) -> None:

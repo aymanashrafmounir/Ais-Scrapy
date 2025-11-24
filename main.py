@@ -93,11 +93,12 @@ class ScraperOrchestrator:
                     logger.info(f"Processing {i}/{len(websites)}: {website_config.search_title}")
                     
                     try:
-                        # Create scraper
+                        # Create scraper (pass categories for MachineFinder)
                         scraper = ScraperFactory.create_scraper(
                             website_config.website_type,
                             website_config.url,
-                            self.scraper_config
+                            self.scraper_config,
+                            categories=website_config.categories
                         )
                         
                         # Handle Craigslist with marker-based approach
