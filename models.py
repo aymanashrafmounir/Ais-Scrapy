@@ -14,6 +14,7 @@ class Machine:
     hours: Optional[str] = None
     location: Optional[str] = None
     image_url: Optional[str] = None
+    country_code: Optional[str] = None  # For filtering (e.g., "CN" for China)
     
     def to_dict(self):
         """Convert to dictionary for Telegram notification"""

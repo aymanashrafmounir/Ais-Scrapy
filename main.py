@@ -102,15 +102,14 @@ class ScraperOrchestrator:
                         )
                         
                         # Handle Craigslist with marker-based approach
-                        if website_config.website_type == 'craigslist':
-                            # Get current marker
+                        if website_config.website_type in ['craigslist', 'mascus']:
+                            # Marker-based approach (Craigslist/Mascus style)
                             current_marker = self.db.get_marker(website_config.search_title)
-                            logger.debug(f"Current marker: {current_marker}")
+                            max_items = getattr(website_config, 'max_items', None)
                             
-                            # Scrape with marker and optional max_items limit
                             new_machines, first_id = scraper.scrape(
-                                current_marker, 
-                                max_items=website_config.max_items
+                                current_marker=current_marker,
+                                max_items=max_items
                             )
                             logger.info(f"Found {len(new_machines)} new items")
                             
@@ -121,17 +120,25 @@ class ScraperOrchestrator:
                                     website_config.url
                                 )
                             
-                            # Send notifications for new machines (skip first cycle)
-                            if new_machines and cycle_count > 1:
-                                await self.notifier.send_new_items_notification(
-                                    website_config.search_title,
-                                    [m.to_dict() for m in new_machines]
-                                )
-                            
                             # Update marker if we have a first item
                             if first_id:
                                 self.db.save_marker(website_config.search_title, first_id)
                                 logger.debug(f"Updated marker to: {first_id}")
+                            
+                            # For Mascus: filter China items from notifications ONLY
+                            machines_for_notification = new_machines
+                            if website_config.website_type == 'mascus':
+                                machines_for_notification = [m for m in new_machines if m.country_code != 'CN']
+                                china_count = len(new_machines) - len(machines_for_notification)
+                                if china_count > 0:
+                                    logger.info(f"Filtered {china_count} China items from notifications")
+                            
+                            # Send notifications for filtered machines (skip first cycle)
+                            if machines_for_notification and cycle_count > 1:
+                                await self.notifier.send_new_items_notification(
+                                    website_config.search_title,
+                                    [m.to_dict() for m in machines_for_notification]
+                                )
                             
                             # Log stats
                             logger.info(f"Marker: {first_id or 'none'} | {len(new_machines)} new items")

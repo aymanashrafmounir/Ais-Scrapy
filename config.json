@@ -15,6 +15,13 @@
     },
     "websites": [
         {
+            "url": "https://www.mascus.co.uk/+/catalogs=construction&itemtype=usedad&brands=case%252ccat%252cdaewoo%252cdevelon%252cdoosan%252chitachi%252chyundai%252cjcb%252cingersoll%2520rand%252cjohn%2520deere%252ckomatsu%252cvolvo/1,createdate_desc,search.html",
+            "website_type": "mascus",
+            "search_title": "Mascus - Construction Equipment",
+            "enabled": true,
+            "max_items": 50
+        },
+        {
             "url": "https://www.aisequip.com/pre-owned-machines/?_categories=backhoe",
             "website_type": "aisequip",
             "search_title": "AIS Equipment - Backhoes",

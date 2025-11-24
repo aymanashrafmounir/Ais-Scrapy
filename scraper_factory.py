@@ -5,6 +5,7 @@ from scrapers.aisequip_scraper import AISEquipScraper
 from scrapers.monroe_tractor_scraper import MonroeTractorScraper
 from scrapers.craigslist_scraper import CraigslistScraper
 from scrapers.machinefinder_scraper import MachineFinderScraper
+from scrapers.mascus_scraper import MascusScraper
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ class ScraperFactory:
         'monroetractor': MonroeTractorScraper,
         'craigslist': CraigslistScraper,
         'machinefinder': MachineFinderScraper,
+        'mascus': MascusScraper,
     }
     
     @classmethod
