@@ -98,74 +98,178 @@
         {
             "url": "https://www.machinefinder.com",
             "website_type": "machinefinder",
-            "search_title": "MachineFinder - Construction Equipment",
+            "search_title": "MachineFinder - Compact Excavators",
             "enabled": true,
             "categories": [
                 {
                     "title": "Compact Excavators",
                     "search_kind": "cwp",
                     "bcat": "compact_excavators"
-                },
+                }
+            ]
+        },
+        {
+            "url": "https://www.machinefinder.com",
+            "website_type": "machinefinder",
+            "search_title": "MachineFinder - Compact Track Loaders",
+            "enabled": true,
+            "categories": [
                 {
                     "title": "Compact Track Loaders",
                     "search_kind": "cwp",
                     "bcat": "compact_trk_loaders"
-                },
+                }
+            ]
+        },
+        {
+            "url": "https://www.machinefinder.com",
+            "website_type": "machinefinder",
+            "search_title": "MachineFinder - Tandem Rollers",
+            "enabled": true,
+            "categories": [
                 {
                     "title": "Tandem Rollers",
                     "search_kind": "wg_rollers",
                     "bcat": "tandem_rollers"
-                },
+                }
+            ]
+        },
+        {
+            "url": "https://www.machinefinder.com",
+            "website_type": "machinefinder",
+            "search_title": "MachineFinder - Wheel Loaders",
+            "enabled": true,
+            "categories": [
                 {
                     "title": "Wheel Loaders",
                     "search_kind": "wheel_loaders",
                     "bcat": "wheel_loaders"
-                },
+                }
+            ]
+        },
+        {
+            "url": "https://www.machinefinder.com",
+            "website_type": "machinefinder",
+            "search_title": "MachineFinder - Compact Loaders",
+            "enabled": true,
+            "categories": [
                 {
                     "title": "Compact Loaders",
                     "search_kind": "cwp",
                     "bcat": "compact_loaders"
-                },
+                }
+            ]
+        },
+        {
+            "url": "https://www.machinefinder.com",
+            "website_type": "machinefinder",
+            "search_title": "MachineFinder - Backhoes",
+            "enabled": true,
+            "categories": [
                 {
                     "title": "Backhoes",
                     "search_kind": "backhoe_loaders",
                     "bcat": "backhoe_loaders"
-                },
+                }
+            ]
+        },
+        {
+            "url": "https://www.machinefinder.com",
+            "website_type": "machinefinder",
+            "search_title": "MachineFinder - Skid Steer Loaders",
+            "enabled": true,
+            "categories": [
                 {
                     "title": "Skid Steer Loaders",
                     "search_kind": "cwp",
                     "bcat": "skid_steer_loaders"
-                },
+                }
+            ]
+        },
+        {
+            "url": "https://www.machinefinder.com",
+            "website_type": "machinefinder",
+            "search_title": "MachineFinder - Excavators",
+            "enabled": true,
+            "categories": [
                 {
                     "title": "Excavators",
                     "search_kind": "excavators",
                     "bcat": "excavators"
-                },
+                }
+            ]
+        },
+        {
+            "url": "https://www.machinefinder.com",
+            "website_type": "machinefinder",
+            "search_title": "MachineFinder - Motor Graders",
+            "enabled": true,
+            "categories": [
                 {
                     "title": "Motor Graders",
                     "search_kind": "motor_graders",
                     "bcat": "motor_graders"
-                },
+                }
+            ]
+        },
+        {
+            "url": "https://www.machinefinder.com",
+            "website_type": "machinefinder",
+            "search_title": "MachineFinder - Crawler Dozers",
+            "enabled": true,
+            "categories": [
                 {
                     "title": "Crawler Dozers",
                     "search_kind": "crawler_dozers",
                     "bcat": "crawler_dozers"
-                },
+                }
+            ]
+        },
+        {
+            "url": "https://www.machinefinder.com",
+            "website_type": "machinefinder",
+            "search_title": "MachineFinder - Crawler Loaders",
+            "enabled": true,
+            "categories": [
                 {
                     "title": "Crawler Loaders",
                     "search_kind": "crawler_loaders",
                     "bcat": "crawler_loaders"
-                },
+                }
+            ]
+        },
+        {
+            "url": "https://www.machinefinder.com",
+            "website_type": "machinefinder",
+            "search_title": "MachineFinder - Telehandlers",
+            "enabled": true,
+            "categories": [
                 {
                     "title": "Telehandlers",
                     "search_kind": "telehandlers",
                     "bcat": "telehandlers"
-                },
+                }
+            ]
+        },
+        {
+            "url": "https://www.machinefinder.com",
+            "website_type": "machinefinder",
+            "search_title": "MachineFinder - Articulated Dump Trucks",
+            "enabled": true,
+            "categories": [
                 {
                     "title": "Articulated Dump Trucks",
                     "search_kind": "trucks",
                     "bcat": "at_dump_trucks"
-                },
+                }
+            ]
+        },
+        {
+            "url": "https://www.machinefinder.com",
+            "website_type": "machinefinder",
+            "search_title": "MachineFinder - Wheeled Excavators",
+            "enabled": true,
+            "categories": [
                 {
                     "title": "Wheeled Excavators",
                     "search_kind": "excavators",

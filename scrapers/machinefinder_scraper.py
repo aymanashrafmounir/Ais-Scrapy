@@ -18,6 +18,12 @@ logger = logging.getLogger(__name__)
 class MachineFinderScraper(BaseScraper):
     """API-based scraper for MachineFinder.com with parallel requests"""
     
+    # Class-level cache for tokens
+    _cached_csrf_token = None
+    _cached_cookies = None
+    _token_timestamp = 0
+    _TOKEN_TTL = 1800  # 30 minutes
+    
     def __init__(self, url: str, config: dict, categories: list = None):
         """
         Initialize MachineFinder scraper
@@ -29,8 +35,9 @@ class MachineFinderScraper(BaseScraper):
         """
         super().__init__(url, config)
         self.categories = categories or []
-        self.csrf_token = None
-        self.cookies = {}
+        # Initialize instance tokens from cache
+        self.csrf_token = MachineFinderScraper._cached_csrf_token
+        self.cookies = MachineFinderScraper._cached_cookies or {}
     
     def scrape(self) -> Tuple[List[Machine], int]:
         """
@@ -40,25 +47,60 @@ class MachineFinderScraper(BaseScraper):
             Tuple of (machines_list, pages_count)
         """
         try:
-            # Step 1: Extract CSRF token and cookies
-            if not self._extract_tokens():
-                logger.error("Failed to extract CSRF token and cookies")
-                return [], 0
-            
-            # Step 2: Fetch all machines via API
-            all_machines = []
-            for category in self.categories:
-                logger.info(f"Fetching {category['title']}...")
-                machines = asyncio.run(self._fetch_category_async(category))
-                all_machines.extend(machines)
-            
-            logger.info(f"Successfully fetched {len(all_machines)} total machines")
-            return all_machines, 1
+            # Run async scraping in a separate thread to avoid event loop conflict
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(self._run_async_scrape)
+                return future.result()
             
         except Exception as e:
             logger.error(f"Error in MachineFinder scraper: {e}")
             return [], 0
+
+    def _run_async_scrape(self) -> Tuple[List[Machine], int]:
+        """Helper to run async logic in a new event loop"""
+        return asyncio.run(self._scrape_async_logic())
+
+    async def _scrape_async_logic(self) -> Tuple[List[Machine], int]:
+        """The actual async scraping logic"""
+        # Step 1: Extract CSRF token and cookies (if not cached or expired)
+        if not self._ensure_tokens():
+            logger.error("Failed to extract CSRF token and cookies")
+            return [], 0
+        
+        # Step 2: Fetch all machines via API
+        all_machines = []
+        for category in self.categories:
+            logger.info(f"Fetching {category['title']}...")
+            machines = await self._fetch_category_async(category)
+            all_machines.extend(machines)
+        
+        logger.info(f"Successfully fetched {len(all_machines)} total machines")
+        return all_machines, 1
     
+    def _ensure_tokens(self) -> bool:
+        """Ensure valid tokens exist, refreshing if necessary"""
+        current_time = time.time()
+        
+        # Check if we have valid cached tokens
+        if (MachineFinderScraper._cached_csrf_token and 
+            MachineFinderScraper._cached_cookies and 
+            (current_time - MachineFinderScraper._token_timestamp < MachineFinderScraper._TOKEN_TTL)):
+            
+            self.csrf_token = MachineFinderScraper._cached_csrf_token
+            self.cookies = MachineFinderScraper._cached_cookies
+            return True
+            
+        # Need to refresh tokens
+        if self._extract_tokens():
+            # Update cache
+            MachineFinderScraper._cached_csrf_token = self.csrf_token
+            MachineFinderScraper._cached_cookies = self.cookies
+            MachineFinderScraper._token_timestamp = current_time
+            return True
+            
+        return False
+
     def _extract_tokens(self) -> bool:
         """
         Extract CSRF token and cookies from MachineFinder website
