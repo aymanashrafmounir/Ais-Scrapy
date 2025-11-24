@@ -9,6 +9,8 @@ from scrapers.base_scraper import BaseScraper
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +54,22 @@ class CraigslistScraper(BaseScraper):
                 driver.set_page_load_timeout(60)
                 driver.get(self.url)
                 
-                # Wait for page to load
-                time.sleep(3)
+                # Wait for search results to load (up to 20 seconds)
+                wait = WebDriverWait(driver, 20)
+                try:
+                    # Try to wait for 'a.main' elements first
+                    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.main')))
+                    logger.debug("Found 'a.main' elements")
+                except:
+                    try:
+                        # Fallback to old selector
+                        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'li.cl-search-result')))
+                        logger.debug("Found 'li.cl-search-result' elements")
+                    except:
+                        logger.warning("Timeout waiting for search results to load")
+                
+                # Give it a bit more time for all content to render
+                time.sleep(2)
                 
                 # Parse the fully loaded page
                 soup = BeautifulSoup(driver.page_source, 'html.parser')
@@ -90,16 +106,11 @@ class CraigslistScraper(BaseScraper):
         machines = []
         first_item_id = None
         
-        # Find all result items (Craigslist uses galleries)
+        # Find all result items - Craigslist uses <div class="cl-search-result" data-pid="...">
         results = soup.find_all('div', class_='cl-search-result')
         
         if not results:
-            logger.warning(f"No Craigslist results found. Trying alternative selector...")
-            # Try alternative selector for combined classes
-            results = soup.select('div.cl-search-result.cl-search-view-mode-gallery')
-        
-        if not results:
-            logger.warning("No Craigslist results found with any selector")
+            logger.warning(f"No Craigslist results found with 'div.cl-search-result' selector")
             return [], None
         
         logger.info(f"Found {len(results)} total results on page")
@@ -111,8 +122,9 @@ class CraigslistScraper(BaseScraper):
                     logger.info(f"Reached max_items limit ({max_items}), stopping")
                     break
                 
-                # Extract data-pid as unique ID
+                # Extract unique ID from data-pid attribute
                 unique_id = item.get('data-pid')
+                
                 if not unique_id:
                     logger.debug(f"Skipping item {idx}: no data-pid")
                     continue
@@ -128,7 +140,7 @@ class CraigslistScraper(BaseScraper):
                     break
                 
                 # Extract machine data
-                machine = self.extract_machine_data(item)
+                machine = self.extract_machine_data(item, unique_id)
                 if machine:
                     machines.append(machine)
                     
@@ -142,53 +154,80 @@ class CraigslistScraper(BaseScraper):
         """Not used - using _parse_with_marker instead"""
         pass
     
-    def extract_machine_data(self, element) -> Optional[Machine]:
+    def extract_machine_data(self, element, unique_id: str) -> Optional[Machine]:
         """
         Extract data from a single Craigslist result item
         
         Args:
-            element: BeautifulSoup element for the result
+            element: BeautifulSoup element for the result (div.cl-search-result tag)
+            unique_id: The unique ID from data-pid attribute
             
         Returns:
             Machine object or None
         """
         try:
-            # Get unique ID from data-pid
-            unique_id = element.get('data-pid')
-            if not unique_id:
-                return None
+            # Element is a div.cl-search-result containing all the listing info
             
-            # Extract title
+            # Extract link from a.main
+            main_link = element.find('a', class_='main')
+            link = ''
+            if main_link:
+                link = main_link.get('href', '')
+                if link and not link.startswith('http'):
+                    link = urljoin('https://craigslist.org', link)
+            
+            # Extract title from a.posting-title > span.label
+            title = None
             title_elem = element.find('a', class_='posting-title')
-            if not title_elem:
+            if title_elem:
+                title_label = title_elem.find('span', class_='label')
+                title = title_label.get_text(strip=True) if title_label else title_elem.get_text(strip=True)
+            
+            if not title:
+                # Fallback to title attribute on the div
+                title = element.get('title', '')
+            
+            if not title:
+                logger.debug(f"No title found for item {unique_id}")
                 return None
             
-            title_label = title_elem.find('span', class_='label')
-            title = title_label.get_text(strip=True) if title_label else element.get('title', '')
-            
-            # Extract URL
-            link = title_elem.get('href', '')
-            if link and not link.startswith('http'):
-                link = urljoin('https://craigslist.org', link)
-            
-            # Extract price
+            # Extract price from span.priceinfo
+            price = None
             price_elem = element.find('span', class_='priceinfo')
-            price = price_elem.get_text(strip=True) if price_elem else None
+            if price_elem:
+                price = price_elem.get_text(strip=True)
             
-            # Extract location and time from meta
+            # Extract location from div.meta
             location = None
             meta_elem = element.find('div', class_='meta')
             if meta_elem:
                 meta_text = meta_elem.get_text(strip=True)
-                # Location is after separator
-                if '•' in meta_text:
-                    location = meta_text.split('•')[-1].strip()
+                # Location is typically after the date, separated by non-breaking space or span.separator
+                # Format is usually like "11/23 Watkinsville" or "11/23•Watkinsville" or "10 mins agoWatkinsville"
+                # Remove common time indicators
+                for time_indicator in ['mins ago', 'min ago', 'hours ago', 'hour ago', 'days ago', 'day ago']:
+                    meta_text = meta_text.replace(time_indicator, '')
+                
+                # Split by common separators
+                parts = meta_text.split(maxsplit=1)
+                if len(parts) > 1:
+                    # Remove any separator characters and clean up
+                    location = parts[1].replace('•', '').strip()
+                elif len(parts) == 1 and parts[0]:
+                    # If there's only one part after cleaning, check if it's not a date
+                    if '/' not in parts[0]:
+                        location = parts[0].replace('•', '').strip()
             
-            # Extract image URL
+            # Extract image URL from img within a.main
             image_url = None
-            img_elem = element.find('img')
-            if img_elem:
-                image_url = img_elem.get('src', '')
+            if main_link:
+                img_elem = main_link.find('img')
+                if img_elem:
+                    # Check data-image-index attribute or src
+                    image_url = img_elem.get('src', '')
+                    # Filter out placeholder/loading images
+                    if 'data:image' in image_url or not image_url:
+                        image_url = None
             
             machine = Machine(
                 unique_id=unique_id,
@@ -200,7 +239,7 @@ class CraigslistScraper(BaseScraper):
                 image_url=image_url
             )
             
-            logger.debug(f"Extracted: {title} ({unique_id})")
+            logger.debug(f"Extracted: {title} ({unique_id}) - Price: {price}, Loc: {location}")
             return machine
             
         except Exception as e:
