@@ -39,6 +39,9 @@ logging.basicConfig(
     handlers=[file_handler, console_handler]
 )
 
+# Disable httpx verbose logs (Telegram API requests)
+logging.getLogger('httpx').setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 # Configure separate timing logger
@@ -74,10 +77,12 @@ class ScraperOrchestrator:
         self.db = DatabaseHandler(self.config.database_path)
         logger.info(f"Database initialized: {self.config.database_path}")
         
-        # Initialize Telegram notifier
+        # Initialize Telegram notifier with backup bots support
+        backup_tokens = self.config.raw_config.get('telegram', {}).get('backup_bot_tokens', [])
         self.notifier = TelegramNotifier(
             self.config.telegram_token,
-            self.config.telegram_chat_ids
+            self.config.telegram_chat_ids,
+            backup_tokens=backup_tokens
         )
         logger.info("Telegram notifier initialized")
         

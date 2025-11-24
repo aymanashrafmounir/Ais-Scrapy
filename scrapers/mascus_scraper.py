@@ -4,6 +4,8 @@ from typing import List, Optional, Tuple
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+import os
 from models import Machine
 from scrapers.base_scraper import BaseScraper
 
@@ -45,10 +47,19 @@ class MascusScraper(BaseScraper):
                 chrome_options.add_argument('--disable-extensions')
                 chrome_options.add_argument('--disable-infobars')
                 chrome_options.add_argument('--window-size=1920,1080')
+                # Suppress Chrome's internal error logs (GPU, GCM, DevTools warnings)
+                chrome_options.add_argument('--log-level=3')  # Only show fatal errors
+                chrome_options.add_argument('--silent')
+                chrome_options.add_argument('--disable-logging')
+                chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+                chrome_options.add_argument('--disable-background-networking')
+                chrome_options.add_argument('--disable-sync')
+                chrome_options.add_argument('--disable-translate')
                 chrome_options.page_load_strategy = 'eager'  # Don't wait for full page load (images, css, etc)
                 
-                # Initialize driver
-                driver = webdriver.Chrome(options=chrome_options)
+                # Initialize driver with suppressed logs
+                service = Service(log_output=os.devnull)
+                driver = webdriver.Chrome(service=service, options=chrome_options)
                 driver.set_page_load_timeout(60)  # Set explicit timeout
                 driver.get(self.url)
                 

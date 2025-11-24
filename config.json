@@ -1,6 +1,10 @@
 {
     "telegram": {
         "bot_token": "8375122848:AAHk893BojkXt8dM2HdRoHM7cDdFoUIEiOo",
+        "backup_bot_tokens": [
+            "7628027656:AAF4ZK-OrljnCwpk7lFgEK2trfwcaOI-KMw",
+            "8242445942:AAFWVsafj3upw0pw6tPQcopW1zpjYmZm9-E"
+        ],
         "chat_ids": {
             "default": "-1003420417789",
             "aisequip": "-1003316096539",

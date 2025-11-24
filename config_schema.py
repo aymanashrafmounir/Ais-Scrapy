@@ -24,6 +24,11 @@ class Config:
         self.max_retries: int = 3
         self.loop_interval: int = 0
         self.user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    
+    @property
+    def raw_config(self) -> Dict[str, Any]:
+        """Expose raw configuration dict"""
+        return self._raw_config
         
     def load(self) -> None:
         """Load configuration from JSON file"""

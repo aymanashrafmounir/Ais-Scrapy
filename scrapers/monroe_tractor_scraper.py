@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+import os
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -37,11 +39,21 @@ class MonroeTractorScraper(BaseScraper):
         chrome_options.add_argument('--disable-images')  # Don't load images (faster)
         chrome_options.add_argument('--blink-settings=imagesEnabled=false')  # Block images
         chrome_options.add_argument('--window-size=1920,1080')  # Set window size for consistency
+        # Suppress Chrome's internal error logs (GPU, GCM, DevTools warnings)
+        chrome_options.add_argument('--log-level=3')  # Only show fatal errors
+        chrome_options.add_argument('--silent')
+        chrome_options.add_argument('--disable-logging')
+        chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+        chrome_options.add_argument('--disable-background-networking')
+        chrome_options.add_argument('--disable-sync')
+        chrome_options.add_argument('--disable-translate')
         chrome_options.add_argument(f'user-agent={self.config.get("user_agent", "Mozilla/5.0")}')
         
+        # Initialize driver with suppressed logs
+        service = Service(log_output=os.devnull)
         driver = None
         try:
-            driver = webdriver.Chrome(options=chrome_options)
+            driver = webdriver.Chrome(service=service, options=chrome_options)
             driver.get(self.url)
             
             # Wait for initial content to load
