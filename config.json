@@ -1,7 +1,14 @@
 {
     "telegram": {
         "bot_token": "8375122848:AAHk893BojkXt8dM2HdRoHM7cDdFoUIEiOo",
-        "chat_id": "-1003420417789"
+        "chat_ids": {
+            "default": "-1003420417789",
+            "aisequip": "-1003316096539",
+            "monroetractor": "-1003410074324",
+            "craigslist": "-1002940482819",
+            "machinefinder": "-1003255595728",
+            "mascus": "-1003433969591"
+        }
     },
     "database": {
         "path": "machines.db"

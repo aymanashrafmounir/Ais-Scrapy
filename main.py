@@ -77,7 +77,7 @@ class ScraperOrchestrator:
         # Initialize Telegram notifier
         self.notifier = TelegramNotifier(
             self.config.telegram_token,
-            self.config.telegram_chat_id
+            self.config.telegram_chat_ids
         )
         logger.info("Telegram notifier initialized")
         
@@ -149,7 +149,8 @@ class ScraperOrchestrator:
                             if len(new_machines) == 0 and not current_marker:
                                 await self.notifier.send_zero_items_alert(
                                     website_config.search_title,
-                                    website_config.url
+                                    website_config.url,
+                                    website_config.website_type
                                 )
                             
                             # Update marker if we have a first item
@@ -169,7 +170,8 @@ class ScraperOrchestrator:
                             if machines_for_notification and cycle_count > 1:
                                 await self.notifier.send_new_items_notification(
                                     website_config.search_title,
-                                    [m.to_dict() for m in machines_for_notification]
+                                    [m.to_dict() for m in machines_for_notification],
+                                    website_config.website_type
                                 )
                             
                             # Log stats
@@ -184,7 +186,8 @@ class ScraperOrchestrator:
                             if len(machines) == 0:
                                 await self.notifier.send_zero_items_alert(
                                     website_config.search_title,
-                                    website_config.url
+                                    website_config.url,
+                                    website_config.website_type
                                 )
                             
                             # Check for new machines and cleanup old ones
@@ -206,7 +209,8 @@ class ScraperOrchestrator:
                                 else:
                                     await self.notifier.send_new_items_notification(
                                         website_config.search_title,
-                                        [m.to_dict() for m in new_machines]
+                                        [m.to_dict() for m in new_machines],
+                                        website_config.website_type
                                     )
                         
                         url_duration = asyncio.get_event_loop().time() - url_start_time

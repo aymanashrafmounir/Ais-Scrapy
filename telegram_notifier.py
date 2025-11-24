@@ -10,28 +10,51 @@ logger = logging.getLogger(__name__)
 
 
 class TelegramNotifier:
-    def __init__(self, bot_token: str, chat_id: str):
+    def __init__(self, bot_token: str, chat_ids: Dict[str, str]):
         self.bot_token = bot_token
-        self.chat_id = chat_id
+        self.chat_ids = chat_ids
+        # Use default as fallback
+        self.default_chat_id = chat_ids.get('default')
+        if not self.default_chat_id and chat_ids:
+            # If no default, use the first one available
+            self.default_chat_id = next(iter(chat_ids.values()))
+            
         self.bot = Bot(token=bot_token)
     
-    async def send_new_items_notification(self, search_title: str, machines: List[Dict]):
+    def _get_chat_id(self, website_type: str = None) -> str:
+        """Get the appropriate chat ID for the website type"""
+        if not website_type:
+            return self.default_chat_id
+            
+        # Try to get specific chat ID for website type
+        chat_id = self.chat_ids.get(website_type.lower())
+        
+        # Fallback to default if not found
+        if not chat_id:
+            chat_id = self.default_chat_id
+            
+        return chat_id
+    
+    async def send_new_items_notification(self, search_title: str, machines: List[Dict], website_type: str = None):
         """Send notification for new machines found"""
         if not machines:
             return
         
         try:
             for machine in machines:
-                await self._send_machine_notification(search_title, machine)
+                await self._send_machine_notification(search_title, machine, website_type)
                 # Delay between messages to avoid Telegram flood control
                 await asyncio.sleep(3)
         except TelegramError as e:
             logger.error(f"Error sending Telegram notification: {e}")
     
-    async def _send_machine_notification(self, search_title: str, machine: Dict):
+    async def _send_machine_notification(self, search_title: str, machine: Dict, website_type: str = None):
         """Send notification for a single machine with image"""
         # Format message
         message = self._format_message(search_title, machine)
+        
+        # Get appropriate chat ID
+        chat_id = self._get_chat_id(website_type)
         
         # Try to send with image
         image_url = machine.get('image_url', '')
@@ -44,23 +67,23 @@ class TelegramNotifier:
                 if image_data:
                     # Send photo with caption
                     await self.bot.send_photo(
-                        chat_id=self.chat_id,
+                        chat_id=chat_id,
                         photo=image_data,
                         caption=message,
                         parse_mode='HTML'
                     )
-                    logger.info(f"Sent notification with image for: {machine['title']}")
+                    logger.info(f"Sent notification with image for: {machine['title']} (Chat: {chat_id})")
                     return
             except Exception as e:
                 logger.warning(f"Failed to send image, sending text only: {e}")
         
         # Fallback: send text only
         await self.bot.send_message(
-            chat_id=self.chat_id,
+            chat_id=chat_id,
             text=message,
             parse_mode='HTML'
         )
-        logger.info(f"Sent text notification for: {machine['title']}")
+        logger.info(f"Sent text notification for: {machine['title']} (Chat: {chat_id})")
     
     def _format_message(self, search_title: str, machine: Dict) -> str:
         """Format the notification message"""
@@ -101,7 +124,7 @@ class TelegramNotifier:
             
             async with self.bot:
                 await self.bot.send_message(
-                    chat_id=self.chat_id,
+                    chat_id=self.default_chat_id,
                     text=formatted_message,
                     parse_mode='HTML'
                 )
@@ -113,13 +136,14 @@ class TelegramNotifier:
             logger.error(f"Failed to send alert: {e}")
             return False
     
-    async def send_zero_items_alert(self, search_title: str, url: str) -> bool:
+    async def send_zero_items_alert(self, search_title: str, url: str, website_type: str = None) -> bool:
         """
         Send alert when a URL scrapes 0 items (might indicate a problem)
         
         Args:
             search_title: The search title that returned 0 items
             url: The URL that was scraped
+            website_type: The website type (to route to correct chat)
             
         Returns:
             True if sent successfully, False otherwise
@@ -136,15 +160,18 @@ class TelegramNotifier:
                 f"• Scraping issue"
             )
             
+            # Use specific chat ID if available, otherwise default
+            chat_id = self._get_chat_id(website_type)
+            
             async with self.bot:
                 await self.bot.send_message(
-                    chat_id=self.chat_id,
+                    chat_id=chat_id,
                     text=message,
                     parse_mode='HTML',
                     disable_web_page_preview=True
                 )
             
-            logger.info(f"Zero items alert sent for: {search_title}")
+            logger.info(f"Zero items alert sent for: {search_title} (Chat: {chat_id})")
             return True
             
         except Exception as e:

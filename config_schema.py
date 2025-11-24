@@ -14,7 +14,8 @@ class Config:
         self.config_path = config_path
         self._raw_config: Dict[str, Any] = {}
         self.telegram_token: str = ""
-        self.telegram_chat_id: str = ""
+        self.telegram_chat_id: str = ""  # Legacy/Default
+        self.telegram_chat_ids: Dict[str, str] = {}  # Map website_type -> chat_id
         self.websites: List[WebsiteConfig] = []
         self.database_path: str = "machines.db"
         self.scraping_delay: float = 2.0
@@ -46,7 +47,17 @@ class Config:
         # Telegram settings
         telegram = self._raw_config.get('telegram', {})
         self.telegram_token = telegram.get('bot_token', '')
-        self.telegram_chat_id = telegram.get('chat_id', '')
+        
+        # Support both new chat_ids dict and legacy chat_id string
+        chat_ids = telegram.get('chat_ids')
+        if chat_ids and isinstance(chat_ids, dict):
+            self.telegram_chat_ids = chat_ids
+            # Use default as fallback for legacy property
+            self.telegram_chat_id = chat_ids.get('default', '')
+        else:
+            # Legacy support
+            self.telegram_chat_id = telegram.get('chat_id', '')
+            self.telegram_chat_ids = {'default': self.telegram_chat_id}
         
         # Database settings
         self.database_path = self._raw_config.get('database', {}).get('path', 'machines.db')
@@ -86,7 +97,7 @@ class Config:
         if not self.telegram_token:
             errors.append("Telegram bot token is missing")
         
-        if not self.telegram_chat_id:
+        if not self.telegram_chat_ids and not self.telegram_chat_id:
             errors.append("Telegram chat ID is missing")
         
         if not self.websites:
