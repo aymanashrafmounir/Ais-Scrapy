@@ -232,14 +232,14 @@ class TelegramNotifier:
             True if message sent successfully, False otherwise
         """
         message = (
-            "🔄 <b>Proxy Request</b>\\n\\n"
-            "The scraper needs proxies to continue.\\n"
-            "Please send a list of proxies in one of these formats:\\n\\n"
-            "<code>ip:port</code>\\n"
-            "<code>ip:port:username:password</code>\\n\\n"
-            "Example:\\n"
-            "<code>216.10.27.159:6837:ljxlfyox:n8c9ncgh4zvo\\n"
-            "65.111.29.119:3129</code>\\n\\n"
+            "🔄 <b>Proxy Request</b>\n\n"
+            "The scraper needs proxies to continue.\n"
+            "Please send a list of proxies in one of these formats:\n\n"
+            "<code>ip:port</code>\n"
+            "<code>ip:port:username:password</code>\n\n"
+            "Example:\n"
+            "<code>216.10.27.159:6837:ljxlfyox:n8c9ncgh4zvo\n"
+            "65.111.29.119:3129</code>\n\n"
             "⏸️ <b>Scraping is paused</b> until you respond."
         )
         
