@@ -6,7 +6,7 @@
             "8242445942:AAFWVsafj3upw0pw6tPQcopW1zpjYmZm9-E"
         ],
         "chat_ids": {
-            "default": "-1003420417789",
+            "default": "-1003433969591",
             "aisequip": "-1003316096539",
             "monroetractor": "-1003410074324",
             "craigslist": "-1002940482819",
@@ -19,10 +19,10 @@
     },
     "scraping": {
         "delay_between_requests": 5,
-        "delay_between_urls": 7,
+        "delay_between_urls": 15,
         "request_timeout": 30,
-        "max_retries": 5,
-        "loop_interval_seconds": 30,
+        "max_retries": 3,
+        "loop_interval_seconds": 450,
         "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     },
     "websites": [
@@ -31,94 +31,22 @@
             "website_type": "mascus",
             "search_title": "Mascus - Construction Equipment",
             "enabled": true,
+            "use_proxy": true,
             "max_items": 50
         },
         {
             "url": "https://www.aisequip.com/pre-owned-machines/?_categories=backhoe",
             "website_type": "aisequip",
             "search_title": "AIS Equipment - Backhoes",
-            "enabled": true
-        },
-        {
-            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=art-truck",
-            "website_type": "aisequip",
-            "search_title": "AIS Equipment - Articulated Trucks",
-            "enabled": true
-        },
-        {
-            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=dozer",
-            "website_type": "aisequip",
-            "search_title": "AIS Equipment - Dozers",
-            "enabled": true
-        },
-        {
-            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=compactors",
-            "website_type": "aisequip",
-            "search_title": "AIS Equipment - Compactors",
-            "enabled": true
-        },
-        {
-            "url": "https://fresno.craigslist.org/search/hva?bundleDuplicates=1&postal=93721&postedToday=1&search_distance=1000&sort=date#search=2~gallery~0",
-            "website_type": "craigslist",
-            "search_title": "Craigslist - Heavy Equipment (Fresno 1000mi)",
             "enabled": true,
-            "max_items": 50
-        },
-        {
-            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=excavator",
-            "website_type": "aisequip",
-            "search_title": "AIS Equipment - Excavators",
-            "enabled": true
-        },
-        {
-            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=forklift",
-            "website_type": "aisequip",
-            "search_title": "AIS Equipment - Forklifts",
-            "enabled": true
-        },
-        {
-            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=grader",
-            "website_type": "aisequip",
-            "search_title": "AIS Equipment - Graders",
-            "enabled": true
-        },
-        {
-            "url": "https://wichita.craigslist.org/search/hva?bundleDuplicates=1&postal=67202&postedToday=1&search_distance=1000&sort=date#search=2~gallery~0",
-            "website_type": "craigslist",
-            "search_title": "Craigslist - Heavy Equipment (Wichita 1000mi)",
-            "enabled": true,
-            "max_items": 50
-        },
-        {
-            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=roller",
-            "website_type": "aisequip",
-            "search_title": "AIS Equipment - Rollers",
-            "enabled": true
-        },
-        {
-            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=skidsteer",
-            "website_type": "aisequip",
-            "search_title": "AIS Equipment - Skid Steers",
-            "enabled": true
-        },
-        {
-            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=whl-loader",
-            "website_type": "aisequip",
-            "search_title": "AIS Equipment - Wheel Loaders",
-            "enabled": true
-        },
-        {
-            "url": "https://washingtondc.craigslist.org/search/hva?bundleDuplicates=1&postal=20009&postedToday=1&search_distance=1000&sort=date#search=2~gallery~0",
-            "website_type": "craigslist",
-            "search_title": "Craigslist - Heavy Equipment (Washington DC 1000mi)",
-            "enabled": true,
-            "max_items": 50
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
             "website_type": "machinefinder",
             "search_title": "MachineFinder - Compact Excavators",
             "enabled": true,
+            "use_proxy": true,
             "categories": [
                 {
                     "title": "Compact Excavators",
@@ -126,6 +54,21 @@
                     "bcat": "compact_excavators"
                 }
             ]
+        },
+        {
+            "url": "https://fresno.craigslist.org/search/hva?bundleDuplicates=1&postal=93721&postedToday=1&search_distance=1000&sort=date#search=2~gallery~0",
+            "website_type": "craigslist",
+            "search_title": "Craigslist - Heavy Equipment (Fresno 1000mi)",
+            "enabled": true,
+            "use_proxy": false,
+            "max_items": 50
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=art-truck",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Articulated Trucks",
+            "enabled": true,
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
@@ -138,7 +81,15 @@
                     "search_kind": "cwp",
                     "bcat": "compact_trk_loaders"
                 }
-            ]
+            ],
+            "use_proxy": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=dozer",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Dozers",
+            "enabled": true,
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
@@ -151,7 +102,23 @@
                     "search_kind": "wg_rollers",
                     "bcat": "tandem_rollers"
                 }
-            ]
+            ],
+            "use_proxy": true
+        },
+        {
+            "url": "https://wichita.craigslist.org/search/hva?bundleDuplicates=1&postal=67202&postedToday=1&search_distance=1000&sort=date#search=2~gallery~0",
+            "website_type": "craigslist",
+            "search_title": "Craigslist - Heavy Equipment (Wichita 1000mi)",
+            "enabled": true,
+            "max_items": 50,
+            "use_proxy": false
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=compactors",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Compactors",
+            "enabled": true,
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
@@ -164,7 +131,15 @@
                     "search_kind": "wheel_loaders",
                     "bcat": "wheel_loaders"
                 }
-            ]
+            ],
+            "use_proxy": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=excavator",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Excavators",
+            "enabled": true,
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
@@ -177,7 +152,23 @@
                     "search_kind": "cwp",
                     "bcat": "compact_loaders"
                 }
-            ]
+            ],
+            "use_proxy": true
+        },
+        {
+            "url": "https://washingtondc.craigslist.org/search/hva?bundleDuplicates=1&postal=20009&postedToday=1&search_distance=1000&sort=date#search=2~gallery~0",
+            "website_type": "craigslist",
+            "search_title": "Craigslist - Heavy Equipment (Washington DC 1000mi)",
+            "enabled": true,
+            "max_items": 50,
+            "use_proxy": false
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=forklift",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Forklifts",
+            "enabled": true,
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
@@ -190,7 +181,15 @@
                     "search_kind": "backhoe_loaders",
                     "bcat": "backhoe_loaders"
                 }
-            ]
+            ],
+            "use_proxy": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=grader",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Graders",
+            "enabled": true,
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
@@ -203,7 +202,15 @@
                     "search_kind": "cwp",
                     "bcat": "skid_steer_loaders"
                 }
-            ]
+            ],
+            "use_proxy": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=roller",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Rollers",
+            "enabled": true,
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
@@ -216,7 +223,15 @@
                     "search_kind": "excavators",
                     "bcat": "excavators"
                 }
-            ]
+            ],
+            "use_proxy": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=skidsteer",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Skid Steers",
+            "enabled": true,
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
@@ -229,7 +244,22 @@
                     "search_kind": "motor_graders",
                     "bcat": "motor_graders"
                 }
-            ]
+            ],
+            "use_proxy": true
+        },
+        {
+            "url": "https://www.monroetractor.com/for-sale-t/construction/used/",
+            "website_type": "monroetractor",
+            "search_title": "Monroe Tractor - Used Construction Equipment",
+            "enabled": true,
+            "use_proxy": true
+        },
+        {
+            "url": "https://www.aisequip.com/pre-owned-machines/?_categories=whl-loader",
+            "website_type": "aisequip",
+            "search_title": "AIS Equipment - Wheel Loaders",
+            "enabled": true,
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
@@ -242,7 +272,8 @@
                     "search_kind": "crawler_dozers",
                     "bcat": "crawler_dozers"
                 }
-            ]
+            ],
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
@@ -255,7 +286,8 @@
                     "search_kind": "crawler_loaders",
                     "bcat": "crawler_loaders"
                 }
-            ]
+            ],
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
@@ -268,7 +300,8 @@
                     "search_kind": "telehandlers",
                     "bcat": "telehandlers"
                 }
-            ]
+            ],
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
@@ -281,7 +314,8 @@
                     "search_kind": "trucks",
                     "bcat": "at_dump_trucks"
                 }
-            ]
+            ],
+            "use_proxy": true
         },
         {
             "url": "https://www.machinefinder.com",
@@ -294,13 +328,14 @@
                     "search_kind": "excavators",
                     "bcat": "wheeled_excavators"
                 }
-            ]
-        },
-        {
-            "url": "https://www.monroetractor.com/for-sale-t/construction/used/",
-            "website_type": "monroetractor",
-            "search_title": "Monroe Tractor - Used Construction Equipment",
-            "enabled": true
+            ],
+            "use_proxy": true
         }
-    ]
+    ],
+    "proxy": {
+        "enabled": true,
+        "min_proxy_count": 10,
+        "geonode_api_url": "https://proxylist.geonode.com/api/proxy-list?limit=500&page=1&sort_by=lastChecked&sort_type=desc",
+        "test_url": "http://httpbin.org/ip"
+    }
 }

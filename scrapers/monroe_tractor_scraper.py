@@ -43,6 +43,7 @@ class MonroeTractorScraper(BaseScraper):
         chrome_options.add_argument('--log-level=3')  # Only show fatal errors
         chrome_options.add_argument('--silent')
         chrome_options.add_argument('--disable-logging')
+        chrome_options.add_argument('--remote-debugging-port=0')  # Disable DevTools listening
         chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
         chrome_options.add_argument('--disable-background-networking')
         chrome_options.add_argument('--disable-sync')

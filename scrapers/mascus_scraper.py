@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 class MascusScraper(BaseScraper):
     """Mascus scraper with marker-based tracking (like Craigslist)"""
     
-    def __init__(self, url: str, config: dict):
-        super().__init__(url, config)
+    def __init__(self, url: str, config: dict, proxy_manager=None):
+        super().__init__(url, config, proxy_manager=proxy_manager)
     
     def scrape(self, current_marker: Optional[str] = None, max_items: Optional[int] = None) -> Tuple[List[Machine], Optional[str]]:
         """
@@ -51,6 +51,7 @@ class MascusScraper(BaseScraper):
                 chrome_options.add_argument('--log-level=3')  # Only show fatal errors
                 chrome_options.add_argument('--silent')
                 chrome_options.add_argument('--disable-logging')
+                chrome_options.add_argument('--remote-debugging-port=0')  # Disable DevTools listening
                 chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
                 chrome_options.add_argument('--disable-background-networking')
                 chrome_options.add_argument('--disable-sync')

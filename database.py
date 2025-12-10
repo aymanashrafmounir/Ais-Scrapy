@@ -56,6 +56,34 @@ class DatabaseHandler:
                 )
             ''')
             
+            # Create proxies table for proxy management
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS proxies (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ip VARCHAR(50) NOT NULL,
+                    port INTEGER NOT NULL,
+                    protocol VARCHAR(20) NOT NULL,
+                    country VARCHAR(10),
+                    anonymity VARCHAR(50),
+                    latency INTEGER,
+                    username VARCHAR(100),
+                    password VARCHAR(100),
+                    is_valid BOOLEAN DEFAULT 1,
+                    retry_count INTEGER DEFAULT 0,
+                    last_checked TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_used TIMESTAMP,
+                    UNIQUE(ip, port, protocol)
+                )
+            ''')
+            
+            # Create index for faster proxy lookups
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_proxy_valid 
+                ON proxies(is_valid, retry_count)
+            ''')
+
+            
             # Create index for faster lookups
             cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_search_unique 
@@ -244,3 +272,211 @@ class DatabaseHandler:
         except Exception as e:
             logger.error(f"Error saving marker for '{search_title}': {e}")
             return False
+    
+    # ==================== Proxy Management Methods ====================
+    
+    def get_valid_proxies(self, limit: Optional[int] = None) -> List[Tuple]:
+        """
+        Get valid proxies with retry_count < 10
+        
+        Args:
+            limit: Maximum number of proxies to return
+            
+        Returns:
+            List of proxy records
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                query = '''
+                    SELECT * FROM proxies 
+                    WHERE is_valid = 1 AND retry_count < 10
+                    ORDER BY retry_count ASC, latency ASC
+                '''
+                if limit:
+                    query += f' LIMIT {limit}'
+                
+                cursor.execute(query)
+                return cursor.fetchall()
+        except Exception as e:
+            logger.error(f"Error getting valid proxies: {e}")
+            return []
+    
+    def get_proxy_count(self) -> dict:
+        """
+        Get proxy statistics
+        
+        Returns:
+            Dictionary with total, valid, and failed counts
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Total proxies
+                cursor.execute('SELECT COUNT(*) FROM proxies')
+                total = cursor.fetchone()[0]
+                
+                # Valid proxies (retry_count < 10)
+                cursor.execute('SELECT COUNT(*) FROM proxies WHERE is_valid = 1 AND retry_count < 10')
+                valid = cursor.fetchone()[0]
+                
+                # Failed proxies (retry_count >= 10)
+                cursor.execute('SELECT COUNT(*) FROM proxies WHERE retry_count >= 10')
+                failed = cursor.fetchone()[0]
+                
+                return {
+                    'total': total,
+                    'valid': valid,
+                    'failed': failed
+                }
+        except Exception as e:
+            logger.error(f"Error getting proxy count: {e}")
+            return {'total': 0, 'valid': 0, 'failed': 0}
+    
+    def save_proxy(self, ip: str, port: int, protocol: str, country: str = None, 
+                   anonymity: str = None, latency: int = None, username: str = None,
+                   password: str = None) -> bool:
+        """
+        Save a new proxy to database
+        
+        Args:
+            ip: Proxy IP address
+            port: Proxy port
+            protocol: Protocol (http/https/socks4/socks5)
+            country: Country code
+            anonymity: Anonymity level
+            latency: Response time in ms
+            username: Username for authenticated proxies
+            password: Password for authenticated proxies
+            
+        Returns:
+            True if saved, False if already exists or error
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO proxies (ip, port, protocol, country, anonymity, latency, username, password)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (ip, port, protocol, country, anonymity, latency, username, password))
+                auth_info = " (authenticated)" if username else ""
+                logger.debug(f"Saved new proxy: {protocol}://{ip}:{port}{auth_info}")
+                return True
+        except sqlite3.IntegrityError:
+            # This is normal - proxy already exists in database
+            logger.debug(f"Proxy already exists: {protocol}://{ip}:{port}")
+            return False
+        except Exception as e:
+            logger.error(f"Error saving proxy: {e}")
+            return False
+    
+    def update_proxy_status(self, proxy_id: int, is_valid: bool, latency: int = None) -> bool:
+        """
+        Update proxy validation status
+        
+        Args:
+            proxy_id: Proxy ID
+            is_valid: Is proxy working
+            latency: Response time in ms
+            
+        Returns:
+            True if updated successfully
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    UPDATE proxies 
+                    SET is_valid = ?, latency = ?, last_checked = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                ''', (is_valid, latency, proxy_id))
+                return True
+        except Exception as e:
+            logger.error(f"Error updating proxy status: {e}")
+            return False
+    
+    def increment_proxy_retry(self, proxy_id: int) -> bool:
+        """
+        Increment retry count for a proxy when it fails
+        
+        Args:
+            proxy_id: Proxy ID
+            
+        Returns:
+            True if incremented successfully
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    UPDATE proxies 
+                    SET retry_count = retry_count + 1, last_checked = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                ''', (proxy_id,))
+                
+                # Get new retry count
+                cursor.execute('SELECT retry_count FROM proxies WHERE id = ?', (proxy_id,))
+                result = cursor.fetchone()
+                if result:
+                    new_count = result[0]
+                    logger.debug(f"Proxy {proxy_id} retry count: {new_count}")
+                
+                return True
+        except Exception as e:
+            logger.error(f"Error incrementing proxy retry: {e}")
+            return False
+    
+    def mark_proxy_used(self, proxy_id: int) -> bool:
+        """
+        Update last_used timestamp for a proxy
+        
+        Args:
+            proxy_id: Proxy ID
+            
+        Returns:
+            True if updated successfully
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    UPDATE proxies 
+                    SET last_used = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                ''', (proxy_id,))
+                return True
+        except Exception as e:
+            logger.error(f"Error marking proxy as used: {e}")
+            return False
+    
+    def cleanup_failed_proxies(self) -> int:
+        """
+        Remove proxies with retry_count >= 10
+        Called after each scraping cycle
+        
+        Returns:
+            Number of proxies removed
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Get proxies to delete for logging
+                cursor.execute('SELECT ip, port, protocol, retry_count FROM proxies WHERE retry_count >= 10')
+                to_delete = cursor.fetchall()
+                
+                # Delete them
+                cursor.execute('DELETE FROM proxies WHERE retry_count >= 10')
+                deleted_count = cursor.rowcount
+                
+                if deleted_count > 0:
+                    logger.info(f"Cleaned up {deleted_count} failed proxies (retry_count >= 10)")
+                    for proxy in to_delete:
+                        logger.debug(f"Removed proxy: {proxy[2]}://{proxy[0]}:{proxy[1]} (retries: {proxy[3]})")
+                
+                return deleted_count
+        except Exception as e:
+            logger.error(f"Error cleaning up failed proxies: {e}")
+            return 0
+

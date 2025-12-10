@@ -3,6 +3,13 @@
 Web Scraping System for Machinery Listings
 Main orchestrator that coordinates scraping, database, and notifications
 """
+# Suppress TensorFlow and Chrome logs BEFORE any imports
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TensorFlow logs (0=all, 3=errors only)
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN custom operations
+os.environ['GRPC_VERBOSITY'] = 'ERROR'  # Suppress gRPC logs
+os.environ['GLOG_minloglevel'] = '3'  # Suppress Google logging
+
 import asyncio
 import logging
 import sys
@@ -15,6 +22,7 @@ from database import DatabaseHandler
 from telegram_notifier import TelegramNotifier
 from scraper_factory import ScraperFactory
 from models import Machine
+from proxy_manager import ProxyManager
 
 
 # Configure logging with rotation (10MB max, 3 backup files)
@@ -91,8 +99,23 @@ class ScraperOrchestrator:
             'user_agent': self.config.user_agent,
             'request_timeout': self.config.request_timeout,
             'max_retries': self.config.max_retries,
-            'delay_between_requests': self.config.scraping_delay
+            'delay_between_requests': self.config.scraping_delay,
+            'use_proxies': self.config.raw_config.get('proxy', {}).get('enabled', False)
         }
+        
+        # Initialize proxy manager if enabled
+        proxy_config = self.config.raw_config.get('proxy', {})
+        if proxy_config.get('enabled', False):
+            self.proxy_manager = ProxyManager(
+                db=self.db,
+                telegram_notifier=self.notifier,
+                min_proxy_count=proxy_config.get('min_proxy_count', 10),
+                test_url=proxy_config.get('test_url', 'http://httpbin.org/ip')
+            )
+            logger.info("Proxy manager initialized and enabled")
+        else:
+            self.proxy_manager = None
+            logger.info("Proxy support disabled")
     
     async def run(self):
         """Main execution method"""
@@ -123,6 +146,10 @@ class ScraperOrchestrator:
                 timing_logger.info(f"CYCLE {cycle_count} STARTED")
                 timing_logger.info(f"="*60)
                 
+                # Check and refill proxies if enabled
+                if self.proxy_manager:
+                    await self.proxy_manager.check_and_refill_proxies()
+                
                 # Process each website
                 for i, website_config in enumerate(websites, 1):
                     url_start_time = asyncio.get_event_loop().time()
@@ -130,12 +157,20 @@ class ScraperOrchestrator:
                     timing_logger.info(f"URL {i}/{len(websites)}: {website_config.search_title} - Started")
                     
                     try:
-                        # Create scraper (pass categories for MachineFinder)
+                        # Check if this website should use proxy
+                        use_proxy = website_config.use_proxy if hasattr(website_config, 'use_proxy') else True
+                        proxy_manager_to_use = self.proxy_manager if use_proxy else None
+                        
+                        if not use_proxy:
+                            logger.info(f"  → Proxy disabled for {website_config.search_title}")
+                        
+                        # Create scraper (pass categories for MachineFinder and proxy_manager)
                         scraper = ScraperFactory.create_scraper(
                             website_config.website_type,
                             website_config.url,
                             self.scraper_config,
-                            categories=website_config.categories
+                            categories=website_config.categories,
+                            proxy_manager=proxy_manager_to_use
                         )
                         
                         # Handle Craigslist with marker-based approach
@@ -194,29 +229,33 @@ class ScraperOrchestrator:
                                     website_config.url,
                                     website_config.website_type
                                 )
-                            
-                            # Check for new machines and cleanup old ones
-                            new_machines, deleted_count = await self._process_machines(
-                                website_config.website_type,
-                                website_config.search_title,
-                                machines
-                            )
-                            
-                            # DB Stats
-                            total_in_db = len(machines)
-                            
-                            logger.info(f"Database: {total_in_db} active | {len(new_machines)} new | {deleted_count} removed")
-                            
-                            # Send notifications for new machines
-                            if new_machines:
-                                if cycle_count == 1:
-                                    pass # Suppress on first cycle
-                                else:
-                                    await self.notifier.send_new_items_notification(
-                                        website_config.search_title,
-                                        [m.to_dict() for m in new_machines],
-                                        website_config.website_type
-                                    )
+                                # IMPORTANT: Don't cleanup database when scraping fails
+                                # This prevents deleting all items when proxies/network fails
+                                logger.warning(f"Skipping database update due to 0 results (likely scraping error)")
+                            else:
+                                # Only process and cleanup if we actually got results
+                                # Check for new machines and cleanup old ones
+                                new_machines, deleted_count = await self._process_machines(
+                                    website_config.website_type,
+                                    website_config.search_title,
+                                    machines
+                                )
+                                
+                                # DB Stats
+                                total_in_db = len(machines)
+                                
+                                logger.info(f"Database: {total_in_db} active | {len(new_machines)} new | {deleted_count} removed")
+                                
+                                # Send notifications for new machines
+                                if new_machines:
+                                    if cycle_count == 1:
+                                        pass # Suppress on first cycle
+                                    else:
+                                        await self.notifier.send_new_items_notification(
+                                            website_config.search_title,
+                                            [m.to_dict() for m in new_machines],
+                                            website_config.website_type
+                                        )
                         
                         url_duration = asyncio.get_event_loop().time() - url_start_time
                         logger.info(f"URL processed in {url_duration:.2f}s")
@@ -240,6 +279,17 @@ class ScraperOrchestrator:
                 
                 cycle_duration = asyncio.get_event_loop().time() - cycle_start_time
                 logger.info(f"Cycle duration: {cycle_duration:.2f}s")
+                
+                # Cleanup failed proxies (retry_count >= 10) after each cycle
+                if self.proxy_manager:
+                    deleted_count = self.proxy_manager.cleanup_cycle()
+                    if deleted_count > 0:
+                        logger.info(f"Proxy cleanup: removed {deleted_count} failed proxies")
+                    
+                    # Log proxy stats
+                    proxy_stats = self.proxy_manager.get_stats()
+                    logger.info(f"Proxy stats: {proxy_stats['valid']} valid, {proxy_stats['failed']} failed, {proxy_stats['total']} total")
+                
                 logger.info(f"Cycle {cycle_count} Ended")
                 timing_logger.info(f"CYCLE {cycle_count} ENDED - Total Duration: {cycle_duration:.2f}s")
                 timing_logger.info(f"")

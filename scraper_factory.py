@@ -26,7 +26,7 @@ class ScraperFactory:
     }
     
     @classmethod
-    def create_scraper(cls, website_type: str, url: str, config: dict, categories: list = None) -> BaseScraper:
+    def create_scraper(cls, website_type: str, url: str, config: dict, categories: list = None, proxy_manager=None) -> BaseScraper:
         """
         Create a scraper instance for the given website type
         
@@ -35,6 +35,7 @@ class ScraperFactory:
             url: URL to scrape
             config: Configuration dictionary
             categories: Optional list of categories (for MachineFinder)
+            proxy_manager: Optional ProxyManager instance for proxy support
             
         Returns:
             Scraper instance
@@ -55,9 +56,9 @@ class ScraperFactory:
         
         # MachineFinder needs categories parameter
         if website_type.lower() == 'machinefinder':
-            return scraper_class(url, config, categories=categories)
+            return scraper_class(url, config, categories=categories, proxy_manager=proxy_manager)
         else:
-            return scraper_class(url, config)
+            return scraper_class(url, config, proxy_manager=proxy_manager)
     
     @classmethod
     def register_scraper(cls, website_type: str, scraper_class: Type[BaseScraper]) -> None:

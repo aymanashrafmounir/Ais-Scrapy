@@ -41,6 +41,7 @@ class WebsiteConfig:
     enabled: bool = True
     max_items: Optional[int] = None  # Limit number of items to scrape (for Craigslist)
     categories: Optional[list] = None  # Categories list (for MachineFinder API)
+    use_proxy: bool = True  # Whether to use proxy for this website (default True)
     
     def __post_init__(self):
         """Validate configuration"""
@@ -51,3 +52,41 @@ class WebsiteConfig:
         if not self.search_title:
             raise ValueError("search_title cannot be empty")
 
+
+@dataclass
+class Proxy:
+    """Represents a proxy server"""
+    ip: str
+    port: int
+    protocol: str  # http, https, socks4, socks5
+    country: Optional[str] = None
+    anonymity: Optional[str] = None
+    latency: Optional[int] = None
+    username: Optional[str] = None  # For authenticated proxies
+    password: Optional[str] = None  # For authenticated proxies
+    is_valid: bool = True
+    retry_count: int = 0
+    
+    def to_dict(self):
+        """Convert to dictionary for requests library"""
+        if self.username and self.password:
+            # Authenticated proxy
+            proxy_url = f"{self.protocol}://{self.username}:{self.password}@{self.ip}:{self.port}"
+        else:
+            # Unauthenticated proxy
+            proxy_url = f"{self.protocol}://{self.ip}:{self.port}"
+        
+        return {
+            'http': proxy_url,
+            'https': proxy_url
+        }
+    
+    def get_proxy_url(self) -> str:
+        """Get formatted proxy URL"""
+        if self.username and self.password:
+            return f"{self.protocol}://{self.username}:{self.password}@{self.ip}:{self.port}"
+        return f"{self.protocol}://{self.ip}:{self.port}"
+    
+    def __str__(self):
+        auth_info = f" [auth]" if self.username else ""
+        return f"{self.protocol}://{self.ip}:{self.port}{auth_info} ({self.country or 'Unknown'})"

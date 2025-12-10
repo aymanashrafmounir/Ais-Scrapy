@@ -26,7 +26,7 @@ class MachineFinderScraper(BaseScraper):
     _token_timestamp = 0
     _TOKEN_TTL = 1800  # 30 minutes
     
-    def __init__(self, url: str, config: dict, categories: list = None):
+    def __init__(self, url: str, config: dict, categories: list = None, proxy_manager=None):
         """
         Initialize MachineFinder scraper
         
@@ -34,8 +34,9 @@ class MachineFinderScraper(BaseScraper):
             url: Base URL (not used, kept for compatibility)
             config: Scraper configuration
             categories: List of category dicts with title, search_kind, bcat
+            proxy_manager: Optional ProxyManager instance for proxy support
         """
-        super().__init__(url, config)
+        super().__init__(url, config, proxy_manager=proxy_manager)
         self.categories = categories or []
         # Initialize instance tokens from cache
         self.csrf_token = MachineFinderScraper._cached_csrf_token
@@ -130,6 +131,7 @@ class MachineFinderScraper(BaseScraper):
                 chrome_options.add_argument('--log-level=3')  # Only show fatal errors
                 chrome_options.add_argument('--silent')
                 chrome_options.add_argument('--disable-logging')
+                chrome_options.add_argument('--remote-debugging-port=0')  # Disable DevTools listening
                 chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
                 chrome_options.add_argument('--disable-background-networking')
                 chrome_options.add_argument('--disable-sync')

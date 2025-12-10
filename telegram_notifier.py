@@ -3,7 +3,7 @@ import requests
 from io import BytesIO
 from telegram import Bot
 from telegram.error import TelegramError
-from typing import Dict, List
+from typing import Dict, List, Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -223,3 +223,126 @@ class TelegramNotifier:
         
         # Return True if at least one bot works
         return any(results)
+    
+    async def request_proxies_from_user(self) -> bool:
+        """
+        Send a message to Telegram requesting proxies from the user
+        
+        Returns:
+            True if message sent successfully, False otherwise
+        """
+        message = (
+            "🔄 <b>Proxy Request</b>\\n\\n"
+            "The scraper needs proxies to continue.\\n"
+            "Please send a list of proxies in one of these formats:\\n\\n"
+            "<code>ip:port</code>\\n"
+            "<code>ip:port:username:password</code>\\n\\n"
+            "Example:\\n"
+            "<code>216.10.27.159:6837:ljxlfyox:n8c9ncgh4zvo\\n"
+            "65.111.29.119:3129</code>\\n\\n"
+            "⏸️ <b>Scraping is paused</b> until you respond."
+        )
+        
+        # Try each bot
+        for bot_idx, bot_token in enumerate(self.bot_tokens):
+            bot_name = "Primary Bot" if bot_idx == 0 else f"Backup Bot {bot_idx}"
+            try:
+                bot = Bot(token=bot_token)
+                async with bot:
+                    await bot.send_message(
+                        chat_id=self.default_chat_id,
+                        text=message,
+                        parse_mode='HTML'
+                    )
+                logger.info(f"✓ {bot_name} sent proxy request message")
+                return True
+            except Exception as e:
+                logger.error(f"✗ {bot_name} failed to send proxy request: {e}")
+                if bot_idx < len(self.bot_tokens) - 1:
+                    continue
+        
+        logger.error("✗ All bots failed to send proxy request")
+        return False
+    
+    async def wait_for_proxy_response(self, timeout: int = 3600) -> Optional[str]:
+        """
+        Wait for user's proxy response message using polling
+        This will BLOCK the scraper until user responds or timeout occurs
+        
+        Args:
+            timeout: Maximum time to wait in seconds (default: 1 hour)
+            
+        Returns:
+            Proxy text from user's message, or None if timeout/error
+        """
+        logger.info(f"⏸️ Waiting for user to send proxies (timeout: {timeout}s)...")
+        
+        # Try each bot until one works
+        for bot_idx, bot_token in enumerate(self.bot_tokens):
+            bot_name = "Primary Bot" if bot_idx == 0 else f"Backup Bot {bot_idx}"
+            
+            try:
+                bot = Bot(token=bot_token)
+                
+                # Get current update offset
+                async with bot:
+                    updates = await bot.get_updates(limit=1, timeout=5)
+                    last_update_id = updates[-1].update_id if updates else 0
+                
+                logger.info(f"Using {bot_name} for message polling (offset: {last_update_id})")
+                
+                # Poll for new messages
+                start_time = asyncio.get_event_loop().time()
+                poll_interval = 2  # Check every 2 seconds
+                
+                while (asyncio.get_event_loop().time() - start_time) < timeout:
+                    try:
+                        async with bot:
+                            updates = await bot.get_updates(
+                                offset=last_update_id + 1,
+                                timeout=poll_interval,
+                                allowed_updates=['message']
+                            )
+                        
+                        if updates:
+                            logger.info(f"📨 Received {len(updates)} update(s)")
+                            for update in updates:
+                                last_update_id = update.update_id
+                                logger.debug(f"Update {update.update_id}: has_message={bool(update.message)}")
+                                
+                                # Accept proxy messages from ANY chat (DM or group)
+                                if update.message:
+                                    msg_chat_id = str(update.message.chat.id)
+                                    logger.info(f"Message from chat: {msg_chat_id}")
+                                    
+                                    # Check if it's a text message
+                                    if update.message.text:
+                                        proxy_text = update.message.text.strip()
+                                        logger.info(f"✓ Received proxy message from user ({len(proxy_text)} chars)")
+                                        return proxy_text
+                                    else:
+                                        logger.warning(f"Message received but no text content")
+                        
+                        # Small delay between polls
+                        await asyncio.sleep(0.5)
+                        
+                    except TelegramError as e:
+                        logger.warning(f"Polling error: {e}")
+                        await asyncio.sleep(1)
+                        continue
+                
+                # Timeout reached
+                logger.warning(f"⏱️ Timeout reached ({timeout}s) waiting for proxy response")
+                return None
+                
+            except Exception as e:
+                logger.error(f"✗ {bot_name} failed during polling: {e}")
+                if bot_idx < len(self.bot_tokens) - 1:
+                    logger.info(f"→ Trying next bot...")
+                    continue
+                else:
+                    logger.error("✗ All bots failed during proxy polling")
+                    return None
+        
+        return None
+

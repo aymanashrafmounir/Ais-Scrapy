@@ -86,7 +86,8 @@ class Config:
                     search_title=site['search_title'],
                     enabled=site.get('enabled', True),
                     max_items=site.get('max_items', None),  # Parse max_items from config
-                    categories=site.get('categories', None)  # Parse categories for MachineFinder
+                    categories=site.get('categories', None),  # Parse categories for MachineFinder
+                    use_proxy=site.get('use_proxy', True)  # Parse use_proxy option (default True)
                 )
                 websites.append(website)
             except (KeyError, ValueError) as e:

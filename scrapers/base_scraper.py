@@ -16,16 +16,19 @@ class BaseScraper(ABC):
     Uses Template Method pattern - defines the workflow, subclasses implement details
     """
     
-    def __init__(self, url: str, config: dict):
+    def __init__(self, url: str, config: dict, proxy_manager=None):
         """
         Initialize scraper
         
         Args:
             url: The URL to scrape
             config: Configuration dictionary with settings like user_agent, timeout, etc.
+            proxy_manager: Optional ProxyManager instance for proxy support
         """
         self.url = url
         self.config = config
+        self.proxy_manager = proxy_manager
+        self.use_proxies = config.get('use_proxies', False) and proxy_manager is not None
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': config.get('user_agent', 'Mozilla/5.0'),
@@ -83,7 +86,7 @@ class BaseScraper(ABC):
     
     def _fetch_page(self, url: str) -> Optional[BeautifulSoup]:
         """
-        Fetch and parse a page
+        Fetch and parse a page, with optional proxy support
         
         Args:
             url: URL to fetch
@@ -95,8 +98,20 @@ class BaseScraper(ABC):
         timeout = self.config.get('request_timeout', 30)
         
         for attempt in range(max_retries):
+            current_proxy = None
             try:
-                response = self.session.get(url, timeout=timeout)
+                # Get proxy if enabled
+                if self.use_proxies:
+                    current_proxy = self.proxy_manager.get_next_proxy()
+                    if current_proxy:
+                        logger.debug(f"Using proxy: {current_proxy.get('http', 'N/A')}")
+                
+                # Make request
+                response = self.session.get(
+                    url, 
+                    timeout=timeout,
+                    proxies=current_proxy if current_proxy else None
+                )
                 response.raise_for_status()
                 
                 soup = BeautifulSoup(response.content, 'html.parser')
@@ -104,6 +119,12 @@ class BaseScraper(ABC):
             
             except requests.RequestException as e:
                 logger.warning(f"Attempt {attempt + 1}/{max_retries} failed for {url}: {e}")
+                
+                # If proxy was used, increment its retry count
+                if current_proxy:
+                    logger.debug(f"Proxy failed, incrementing retry count")
+                    self.proxy_manager.increment_proxy_retry(current_proxy)
+                
                 if attempt < max_retries - 1:
                     time.sleep(2 ** attempt)  # Exponential backoff
                 else:
