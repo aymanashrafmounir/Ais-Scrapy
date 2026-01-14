@@ -51,7 +51,7 @@ class MonroeTractorScraper(BaseScraper):
         chrome_options.add_argument(f'user-agent={self.config.get("user_agent", "Mozilla/5.0")}')
         
         # Initialize driver with suppressed logs
-        service = Service(log_output=os.devnull)
+        service = Service(ChromeDriverManager().install(), log_output=os.devnull)
         driver = None
         try:
             driver = webdriver.Chrome(service=service, options=chrome_options)

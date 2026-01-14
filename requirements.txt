@@ -5,3 +5,5 @@ selenium
 aiohttp>=3.9.0
 lxml>=4.9.0
 httpx>=0.27.0
+webdriver-manager
+

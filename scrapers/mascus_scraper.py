@@ -59,7 +59,7 @@ class MascusScraper(BaseScraper):
                 chrome_options.page_load_strategy = 'eager'  # Don't wait for full page load (images, css, etc)
                 
                 # Initialize driver with suppressed logs
-                service = Service(log_output=os.devnull)
+                service = Service(ChromeDriverManager().install(), log_output=os.devnull)
                 driver = webdriver.Chrome(service=service, options=chrome_options)
                 driver.set_page_load_timeout(60)  # Set explicit timeout
                 driver.get(self.url)

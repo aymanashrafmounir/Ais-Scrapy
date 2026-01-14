@@ -64,7 +64,7 @@ class CraigslistScraper(BaseScraper):
                 chrome_options.page_load_strategy = 'eager'
                 
                 # Initialize driver with suppressed logs
-                service = Service(log_output=os.devnull)
+                service = Service(ChromeDriverManager().install(), log_output=os.devnull)
                 driver = webdriver.Chrome(service=service, options=chrome_options)
                 driver.set_page_load_timeout(60)
                 driver.get(self.url)
