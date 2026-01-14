@@ -5,16 +5,22 @@ set -e
 
 echo "Starting Chrome setup..."
 
-# Update package list
+# 1. Clean up potential broken previous attempts first
+# This prevents "apt-get update" from failing due to the bad signature we just encountered
+if [ -f /etc/apt/sources.list.d/google-chrome.list ]; then
+    echo "Removing previous Google Chrome source list..."
+    sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+fi
+
+# 2. Update package list (should work now that bad repo is gone)
 echo "Updating package list..."
 sudo apt-get update
 
-# Install basic tools
+# 3. Install basic tools and GPG
 echo "Installing basic tools..."
 sudo apt-get install -y wget curl unzip gnupg2
 
-# Install comprehensive list of dependencies for Chrome and Chromedriver
-# This list covers almost all potential missing libraries on minimal Debian/Ubuntu systems
+# 4. Install system dependencies for Chrome
 echo "Installing system dependencies..."
 sudo apt-get install -y \
     ca-certificates \
@@ -56,23 +62,25 @@ sudo apt-get install -y \
     xdg-utils \
     libxshmfence1
 
-# Add Google Chrome repository key
-echo "Adding Google Chrome key..."
-wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+# 5. Install Google Chrome Signing Key (Modern "signed-by" method)
+# This fixes the "OpenPGP signature verification failed" error
+echo "Installing Google Chrome key..."
+sudo mkdir -p /usr/share/keyrings
+wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor | sudo tee /usr/share/keyrings/google-chrome.gpg > /dev/null
 
-# Add Google Chrome repository
+# 6. Add Google Chrome repository with explicit key reference
 echo "Adding Google Chrome repository..."
-echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
 
-# Update package list again
+# 7. Update package list again to pick up the new repo
 echo "Updating package list (2)..."
 sudo apt-get update
 
-# Install Google Chrome
+# 8. Install Google Chrome
 echo "Installing Google Chrome Stable..."
 sudo apt-get install -y google-chrome-stable
 
-# Verify Installation
+# 9. Verify Installation
 echo "Verifying installation..."
 if command -v google-chrome &> /dev/null; then
     CHROME_VERSION=$(google-chrome --version)
